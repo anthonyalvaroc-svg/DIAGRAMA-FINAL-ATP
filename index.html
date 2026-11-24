@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</title>
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=12" />
   <!-- Librerías ligeras opcionales (degradan con elegancia si no hay red) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
@@ -17,21 +17,46 @@
           <h1>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</h1>
           <p class="sub">Completa los datos técnicos o importa desde tus fotos/Excel y descarga cada plano en PNG.</p>
         </div>
-        <button type="button" id="btnResetTodo" class="btn-action btn-ghost" title="Restablecer valores por defecto">
-          Restablecer Datos
-        </button>
+        <div class="header-actions-top">
+          <button type="button" id="btnNuevoSitioConBase" class="btn-action btn-secondary" title="Limpia fotos y sitio manteniendo la lista de equipos y estructura como plantilla">
+            Nuevo Sitio (Usar Plantilla)
+          </button>
+          <button type="button" id="btnDescargarTodoLote" class="btn-action btn-primary" title="Descarga SPAT, Perímetro, Torre y Equipos en secuencia">
+            Descargar Todo (F10)
+          </button>
+          <button type="button" id="btnResetTodo" class="btn-action btn-ghost" title="Restablecer valores por defecto">
+            Restablecer
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- Barra superior compartida -->
+    <!-- Barra superior compartida y sincronizada en tiempo real con las 4 pestañas -->
     <section class="shared-site-bar">
-      <div class="shared-bar-grid">
+      <div class="shared-bar-grid-4">
         <div class="field">
-          <label for="sitio">CÓDIGO / NOMBRE DEL SITIO</label>
+          <label for="sitio">CÓDIGO / NOMBRE DEL SITIO (Todas las pestañas)</label>
           <input type="text" id="sitio" value="LI0123_SITIO" placeholder="Ej. LI0123_SITIO" />
         </div>
-        <div class="shared-sync-badge" id="syncStatusBadge" title="Los cambios de sitio, tipo de torre y altura se sincronizan entre pestañas">
-          Sincronización activa entre pestañas
+        <div class="field">
+          <label for="globalTipoTorre">TIPO DE TORRE (Sincroniza Pestañas 1, 2, 3 y 4)</label>
+          <select id="globalTipoTorre">
+            <option value="arbol">1. Torre público tipo árbol</option>
+            <option value="monopolo">2. Torre monopolo</option>
+            <option value="autosoportada_normal">3. Autosoportada (roldana normal)</option>
+            <option value="arriostrada_escalera_gato">4. Arriostrada con escalera gato</option>
+            <option value="ventada_edificio">5. Ventada con edificio</option>
+            <option value="ventada_piso">6. Ventada de piso</option>
+            <option value="autosoportada_encima">7. Autosoportada (roldana encima)</option>
+            <option value="arriostrada_edificio_normal">8. Arriostrada con edificio normal</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="globalAlturaTorre">ALTURA TOTAL TORRE (m) (Sincroniza 3 y 4)</label>
+          <input type="number" id="globalAlturaTorre" step="0.01" min="1" value="30.00" />
+        </div>
+        <div class="shared-sync-badge" id="syncStatusBadge">
+          4 Pestañas Sincronizadas • Atajo: Ctrl+Enter descarga
         </div>
       </div>
     </section>
@@ -303,17 +328,83 @@
             </label>
             <button type="button" id="btnPegarListaEquipos" class="btn-action btn-ghost">Pegar Lista / Portal</button>
             <button type="button" id="btnPlantillasEquipos" class="btn-action btn-ghost">Plantillas Rápidas</button>
+            <button type="button" id="btnAjusteMasivoAlturas" class="btn-action btn-ghost" title="Sumar, restar o generar alturas en cadena">+/- Alturas</button>
             <button type="button" id="btnAgregarEquipo" class="btn-action btn-secondary">+ Agregar Equipo</button>
           </div>
         </div>
 
-        <!-- Panel de Plantillas Rápidas -->
+
+        <!-- Panel de Ajuste Masivo de Alturas y Plantilla Guardada -->
+        <div id="panelAjusteAlturas" class="paste-panel" hidden>
+          <label>Ajuste rápido de alturas en lote (ideal al pasar de una torre de 30m a otra de 36m o 24m):</label>
+          <div class="actions" style="margin-top:8px; margin-bottom:8px; align-items:center;">
+            <input type="number" id="inpDeltaAltura" step="0.1" value="3.00" style="width:110px; padding:8px; border:1px solid #cbd5e1; border-radius:6px; font-weight:bold;" />
+            <button type="button" id="btnSumarDeltaAltura" class="btn-action btn-secondary">Sumar (+m) a Todos</button>
+            <button type="button" id="btnRestarDeltaAltura" class="btn-action btn-secondary">Restar (-m) a Todos</button>
+            <button type="button" id="btnEscalarProporcional" class="btn-action btn-primary" title="Ajusta proporcionalmente todas las alturas a la nueva Altura Máxima de Torre">Escalar a Altura Torre</button>
+          </div>
+          <div class="actions" style="margin-bottom:0;">
+            <button type="button" id="btnGuardarPlantillaUsuario" class="btn-action btn-ghost">Guardar Lista Actual como Mi Plantilla</button>
+            <button type="button" id="btnCargarPlantillaUsuario" class="btn-action btn-ghost">Cargar Mi Plantilla Guardada</button>
+            <button type="button" id="btnCerrarAjusteAlturas" class="btn-action btn-ghost">Cerrar</button>
+          </div>
+        </div>
+
+        <!-- Panel de Plantillas de Auto-Llenado de Flechas + Aprendizaje de 200+ Sitios -->
         <div id="panelPlantillasEquipos" class="paste-panel" hidden>
-          <label>Selecciona una plantilla base según la configuración de la torre (reemplaza la lista actual):</label>
-          <div class="actions" style="margin-top:8px; margin-bottom:0;">
-            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="3sectores">3 Sectores Estándar (6 RF + 6 RRU + 1 MW)</button>
-            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="arbol">Monopolo / Árbol (3 RF + 6 RRU + 1 MW)</button>
-            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="autosoportada_full">Autosoportada Multi-operador (9 RF + 9 RRU + 2 MW + GPS)</button>
+          <div class="smart-learning-box">
+            <div class="smart-learning-header">
+              <div>
+                <strong>Motor de Aprendizaje y Plantillas de Flechas (Torres Iguales)</strong>
+                <span class="hint-inline" id="lblResumenAprendizaje">Sitios aprendidos: 0 | Plantillas de flechas guardadas: 0</span>
+              </div>
+              <div class="actions" style="margin-bottom:0;">
+                <button type="button" id="btnAprenderSitioActual" class="btn-action btn-primary" title="Guarda las posiciones exactas de flechas, etiquetas, cima/base y alturas de este sitio para futuros sitios similares">
+                  Aprender Este Sitio
+                </button>
+                <button type="button" id="btnAplicarAprendizajeAuto" class="btn-action btn-secondary" title="Busca en tus sitios aprendidos el más parecido por tipo de torre, altura y equipos y acomoda todas las flechas automáticamente">
+                  Auto-Acomodar Flechas (IA Local)
+                </button>
+              </div>
+            </div>
+
+            <div class="smart-tpl-grid">
+              <div class="field">
+                <label for="inpNombrePlantillaFlechas">Guardar como Plantilla de Torre Igual (con posiciones exactas de flechas):</label>
+                <div style="display:flex; gap:6px;">
+                  <input type="text" id="inpNombrePlantillaFlechas" placeholder="Ej. Torre Árbol 30m 3 Sectores / Ventada 24m..." />
+                  <button type="button" id="btnGuardarPlantillaFlechas" class="btn-action btn-secondary" style="white-space:nowrap;">Guardar Plantilla</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="selPlantillasGuardadas">Aplicar Plantilla de Flechas Guardada:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="selPlantillasGuardadas">
+                    <option value="">-- Selecciona una plantilla guardada --</option>
+                  </select>
+                  <button type="button" id="btnAplicarPlantillaGuardada" class="btn-action btn-primary" style="white-space:nowrap;">Aplicar</button>
+                  <button type="button" id="btnEliminarPlantillaGuardada" class="btn-danger-sm" title="Eliminar plantilla seleccionada">X</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions" style="margin-top:10px; margin-bottom:0; border-top:1px solid #e2e8f0; padding-top:8px;">
+              <button type="button" id="btnExportarCerebro" class="btn-action btn-ghost" title="Descarga un respaldo JSON con todos tus sitios aprendidos y plantillas">
+                Exportar Aprendizaje (JSON)
+              </button>
+              <label class="btn-action btn-ghost file-btn-label" title="Carga un respaldo JSON de sitios aprendidos desde otro dispositivo">
+                Importar Aprendizaje (JSON)
+                <input type="file" id="inputImportarCerebro" accept=".json,application/json" hidden />
+              </label>
+            </div>
+          </div>
+
+          <label style="margin-top:10px;">Plantillas base rápidas de fábrica:</label>
+          <div class="actions" style="margin-top:6px; margin-bottom:0;">
+            <button type="button" class="btn-action btn-ghost btn-tpl" data-tpl="3sectores">3 Sectores Estándar (6 RF + 6 RRU + 1 MW)</button>
+            <button type="button" class="btn-action btn-ghost btn-tpl" data-tpl="arbol">Monopolo / Árbol (3 RF + 6 RRU + 1 MW)</button>
+            <button type="button" class="btn-action btn-ghost btn-tpl" data-tpl="autosoportada_full">Autosoportada Multi-operador (9 RF + 9 RRU + 2 MW + GPS)</button>
             <button type="button" id="btnCerrarPlantillas" class="btn-action btn-ghost">Cerrar</button>
           </div>
         </div>
@@ -342,6 +433,7 @@
 
       <div class="actions">
         <button type="button" id="btnDescargarUnidaEquipos" class="btn-action btn-primary">Descargar Todo en 1 Imagen (PNG)</button>
+        <button type="button" id="btnAutoAcomodarRapido" class="btn-action btn-secondary" title="Aplica automáticamente la geometría de flechas aprendida de torres iguales">Auto-Llenar Flechas (Aprendido)</button>
         <select id="equiposLayoutUnido" class="select-inline-action" aria-label="Disposición de imagen unida" title="Cómo acomodar las fotos al descargarlas juntas">
           <option value="horizontal" selected>Unir: Lado a lado (Horizontal)</option>
           <option value="grid2x2">Unir: Cuadrícula (2x2)</option>
@@ -365,6 +457,6 @@
     </section>
   </div>
 
-  <script src="app.js?v=10"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

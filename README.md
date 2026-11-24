@@ -10,3 +10,13 @@ Aplicación web estática optimizada para móvil y escritorio que permite genera
    - Lectura automática del sello GPS y nombre de sitio desde fotos de Timestamp Camera.
    - Importación directa desde archivos Excel (`.xlsx`), `.csv`, capturas `.jpg`/`.png` (OCR) o pegado desde el portal, además de plantillas rápidas.
    - Calibración en 2 toques (`Cima / Base`), alineación en margen, bloqueo de arrastre para scroll móvil y desplazamiento táctil de precisión.
+
+5. **Sincronización Total y Aceleradores F10**:
+   - Barra superior sincronizada en tiempo real con las 4 pestañas (Código de Sitio, Tipo de Torre y Altura Total).
+   - Botón `Descargar Todo (F10)` para bajar los 4 planos en secuencia.
+   - Botón `Nuevo Sitio (Usar Plantilla)` y herramienta `+/- Alturas` para ajustar alturas en lote o escalar proporcionalmente.
+
+6. **Motor de Aprendizaje y Plantillas de Flechas (200+ Sitios)**:
+   - Guarda plantillas personalizadas con las coordenadas exactas de flechas (`targetX/Y`), etiquetas (`labelX/Y`) y calibración `Cima/Base` para torres iguales.
+   - Aprende automáticamente cada vez que descargas un esquema o presionas `Aprender Este Sitio` (hasta 300 sitios en memoria local).
+   - Permite exportar e importar la base de aprendizaje en JSON para compartirla entre celular y PC.

@@ -224,37 +224,354 @@ function dibujarPuertaDobleHorizontal(ctx, x, y, anchoTotal, dirY = 1) {
   ctx.restore();
 }
 
-/* =========================================================
-   SINCRONIZACIÓN INTELIGENTE ENTRE PESTAÑAS
-   ========================================================= */
-function sincronizarDesdeModeloTorre() {
-  const modelo = document.getElementById("torreTipo").value;
-  let simboloEquivalente = "auto_cuadrado";
 
-  if (modelo === "arbol" || modelo === "monopolo") {
-    simboloEquivalente = "monopolo";
-  } else if (modelo === "ventada_edificio" || modelo === "ventada_piso") {
-    simboloEquivalente = "ventada";
-  } else if (modelo === "arriostrada_escalera_gato" || modelo === "arriostrada_edificio_normal") {
-    simboloEquivalente = "arriostrada";
-  } else {
-    simboloEquivalente = "auto_cuadrado";
+/* =========================================================
+   MOTOR DE APRENDIZAJE DE SITIOS Y PLANTILLAS DE FLECHAS
+   (CAPACIDAD PARA 200+ SITIOS EN LOCALSTORAGE + EXPORT JSON)
+   ========================================================= */
+const KNOWLEDGE_DB_KEY = "esquemas_tecnicos_cerebro_sitios_v1";
+
+function cargarBaseConocimiento() {
+  try {
+    const raw = localStorage.getItem(KNOWLEDGE_DB_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        sitiosAprendidos: Array.isArray(parsed.sitiosAprendidos) ? parsed.sitiosAprendidos : [],
+        plantillasFlechas: Array.isArray(parsed.plantillasFlechas) ? parsed.plantillasFlechas : []
+      };
+    }
+  } catch (_) {}
+  return { sitiosAprendidos: [], plantillasFlechas: [] };
+}
+
+function guardarBaseConocimiento(db) {
+  try {
+    // Limitar a los 300 sitios más recientes para mantener velocidad instantánea
+    if (db.sitiosAprendidos.length > 300) {
+      db.sitiosAprendidos = db.sitiosAprendidos.slice(-300);
+    }
+    localStorage.setItem(KNOWLEDGE_DB_KEY, JSON.stringify(db));
+  } catch (_) {}
+  actualizarUIPlantillasAprendidas();
+}
+
+function capturarFirmaSitioActual() {
+  const sitio = getSitio();
+  const modeloTorre = document.getElementById("torreTipo")?.value || "arbol";
+  const alturaTorre = parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30;
+  const agrupar = document.getElementById("equiposAgrupar")?.value || "si";
+
+  const fotoRef = fotosPanoramicas[0] || null;
+  const topY = fotoRef ? fotoRef.topY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.topY ?? 0.14);
+  const bottomY = fotoRef ? fotoRef.bottomY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.bottomY ?? 0.86);
+
+  // Guardar geometría aprendida de cada flecha/callout posicionada por el usuario
+  const flechasAprendidas = fotoRef && Array.isArray(fotoRef.callouts)
+    ? fotoRef.callouts.map((c, idx) => ({
+        idx,
+        texto: c.texto,
+        prefijo: (c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i)?.[1] || "EQ").toUpperCase(),
+        altura: c.altura,
+        alturaRelativa: alturaTorre > 0 ? Number((c.altura / alturaTorre).toFixed(4)) : 0.8,
+        lado: c.lado,
+        targetX: Number(c.targetX.toFixed(4)),
+        targetY: Number(c.targetY.toFixed(4)),
+        labelX: Number(c.labelX.toFixed(4)),
+        labelY: Number(c.labelY.toFixed(4))
+      }))
+    : [];
+
+  return {
+    sitio,
+    fecha: new Date().toISOString(),
+    modeloTorre,
+    alturaTorre,
+    agrupar,
+    topY: Number(topY.toFixed(4)),
+    bottomY: Number(bottomY.toFixed(4)),
+    cantidadEquipos: listaEquipos.length,
+    equiposBase: listaEquipos.map((e) => ({
+      etiqueta: e.etiqueta,
+      altura: parseFloat(e.altura) || 0,
+      alturaRelativa: alturaTorre > 0 ? Number(((parseFloat(e.altura) || 0) / alturaTorre).toFixed(4)) : 0.8,
+      lado: e.lado || "AUTO"
+    })),
+    flechasAprendidas
+  };
+}
+
+function aprenderSitioActual(silencioso = false) {
+  const firma = capturarFirmaSitioActual();
+  if (firma.flechasAprendidas.length === 0 && firma.equiposBase.length === 0) {
+    if (!silencioso) {
+      setAviso("avisoEquipos", "Primero sube una foto y acomoda las flechas o equipos para que el sistema pueda aprenderlos.", "warning");
+    }
+    return;
   }
 
+  const db = cargarBaseConocimiento();
+  // Si ya existía este mismo código de sitio, actualizar su registro
+  const idxExistente = db.sitiosAprendidos.findIndex((s) => s.sitio === firma.sitio);
+  if (idxExistente >= 0) {
+    db.sitiosAprendidos[idxExistente] = firma;
+  } else {
+    db.sitiosAprendidos.push(firma);
+  }
+  guardarBaseConocimiento(db);
+
+  if (!silencioso) {
+    setAviso(
+      "avisoEquipos",
+      `Sitio "${firma.sitio}" aprendido (${firma.flechasAprendidas.length} flechas y calibración guardadas). Total aprendidos: ${db.sitiosAprendidos.length} sitio(s).`,
+      "warning"
+    );
+  }
+}
+
+function guardarPlantillaFlechasPersonalizada() {
+  const inp = document.getElementById("inpNombrePlantillaFlechas");
+  const nombre = (inp?.value || "").trim();
+  if (!nombre) {
+    setAviso("avisoEquipos", "Escribe un nombre para la plantilla (ej. 'Torre Árbol 30m 3 Sectores').", "warning");
+    return;
+  }
+
+  const firma = capturarFirmaSitioActual();
+  const db = cargarBaseConocimiento();
+  const nuevaPlantilla = {
+    id: "tpl_" + Date.now(),
+    nombre,
+    ...firma
+  };
+
+  const existente = db.plantillasFlechas.findIndex((p) => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (existente >= 0) {
+    db.plantillasFlechas[existente] = nuevaPlantilla;
+  } else {
+    db.plantillasFlechas.push(nuevaPlantilla);
+  }
+
+  guardarBaseConocimiento(db);
+  if (inp) inp.value = "";
+  setAviso("avisoEquipos", `Plantilla de flechas "${nombre}" guardada correctamente.`, "warning");
+}
+
+function aplicarGeometriaAprendidaAFotos(registro, sobrescribirLista = false) {
+  if (!registro) return false;
+
+  const alturaDestino = parseFloat(document.getElementById("equiposAlturaRef")?.value) || registro.alturaTorre || 30;
+
+  // Si el usuario pidió cargar la plantilla completa (ej. torre idéntica desde cero)
+  if (sobrescribirLista && Array.isArray(registro.equiposBase) && registro.equiposBase.length > 0) {
+    const factorAltura = registro.alturaTorre > 0 ? (alturaDestino / registro.alturaTorre) : 1;
+    listaEquipos = registro.equiposBase.map((eq, idx) => ({
+      id: Date.now() + idx + Math.random(),
+      etiqueta: eq.etiqueta,
+      altura: Number(Math.max(0.5, eq.altura * factorAltura).toFixed(2)),
+      lado: eq.lado || "AUTO"
+    }));
+    renderizarTablaEquipos();
+    guardarEstadoLocal();
+  }
+
+  if (fotosPanoramicas.length === 0) return true;
+
+  fotosPanoramicas.forEach((foto) => {
+    if (typeof registro.topY === "number") foto.topY = registro.topY;
+    if (typeof registro.bottomY === "number") foto.bottomY = registro.bottomY;
+
+    // Primero generar los callouts base con los equipos actuales del sitio
+    calcularCalloutsParaFoto(foto);
+
+    // Luego proyectar las posiciones exactas (targetX, targetY, labelX, labelY) aprendidas de la torre similar
+    if (Array.isArray(registro.flechasAprendidas) && registro.flechasAprendidas.length > 0) {
+      const usadas = new Set();
+
+      foto.callouts.forEach((c) => {
+        const prefC = (c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i)?.[1] || "EQ").toUpperCase();
+        const relH = alturaDestino > 0 ? (c.altura / alturaDestino) : 0.8;
+
+        // Buscar la flecha aprendida más cercana por texto exacto o por mismo tipo de equipo (RF/RRU/MW) y altura relativa
+        let mejorIdx = -1;
+        let mejorScore = Infinity;
+
+        registro.flechasAprendidas.forEach((fa, fIdx) => {
+          if (usadas.has(fIdx)) return;
+          let score = Math.abs((fa.alturaRelativa || 0.8) - relH) * 10;
+          if (fa.texto === c.texto) score -= 5;
+          else if (fa.prefijo === prefC) score -= 2.5;
+          if (c.lado !== "AUTO" && fa.lado === c.lado) score -= 1;
+
+          if (score < mejorScore) {
+            mejorScore = score;
+            mejorIdx = fIdx;
+          }
+        });
+
+        if (mejorIdx >= 0) {
+          usadas.add(mejorIdx);
+          const match = registro.flechasAprendidas[mejorIdx];
+          c.targetX = match.targetX;
+          c.targetY = match.targetY;
+          c.labelX = match.labelX;
+          c.labelY = match.labelY;
+          c.lado = match.lado;
+        }
+      });
+    }
+
+    renderizarFotoEquipos(foto);
+  });
+
+  return true;
+}
+
+function buscarMejorSitioAprendido() {
+  const db = cargarBaseConocimiento();
+  const candidatos = [...db.plantillasFlechas, ...db.sitiosAprendidos];
+  if (candidatos.length === 0) return null;
+
+  const modeloActual = document.getElementById("torreTipo")?.value || "arbol";
+  const alturaActual = parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30;
+  const cantActual = listaEquipos.length;
+
+  let mejor = null;
+  let mejorPuntaje = -Infinity;
+
+  candidatos.forEach((cand) => {
+    let score = 0;
+    if (cand.modeloTorre === modeloActual) score += 50;
+    const diffAlt = Math.abs((cand.alturaTorre || 30) - alturaActual);
+    score += Math.max(0, 25 - diffAlt * 2);
+    const diffCant = Math.abs((cand.cantidadEquipos || 0) - cantActual);
+    score += Math.max(0, 25 - diffCant * 2.5);
+    if (Array.isArray(cand.flechasAprendidas) && cand.flechasAprendidas.length > 0) score += 15;
+
+    if (score > mejorPuntaje) {
+      mejorPuntaje = score;
+      mejor = cand;
+    }
+  });
+
+  return mejor;
+}
+
+function ejecutarAutoLlenadoDesdeAprendizaje() {
+  const mejor = buscarMejorSitioAprendido();
+  if (!mejor) {
+    setAviso(
+      "avisoEquipos",
+      "Aún no hay sitios aprendidos ni plantillas guardadas. Acomoda las flechas en tu primer sitio y presiona 'Aprender Este Sitio' o descárgalo.",
+      "warning"
+    );
+    return;
+  }
+
+  aplicarGeometriaAprendidaAFotos(mejor, false);
+  const origenNombre = mejor.nombre ? `plantilla "${mejor.nombre}"` : `sitio aprendido "${mejor.sitio}"`;
+  setAviso(
+    "avisoEquipos",
+    `Flechas auto-acomodadas usando la geometría de ${origenNombre} (${mejor.modeloTorre}, ${mejor.alturaTorre} m).`,
+    "warning"
+  );
+}
+
+function actualizarUIPlantillasAprendidas() {
+  const db = cargarBaseConocimiento();
+  const lbl = document.getElementById("lblResumenAprendizaje");
+  if (lbl) {
+    lbl.textContent = `Sitios aprendidos: ${db.sitiosAprendidos.length} | Plantillas de flechas guardadas: ${db.plantillasFlechas.length}`;
+  }
+
+  const sel = document.getElementById("selPlantillasGuardadas");
+  if (!sel) return;
+  const prevVal = sel.value;
+  sel.innerHTML = `<option value="">-- Selecciona una plantilla guardada (${db.plantillasFlechas.length}) --</option>`;
+
+  db.plantillasFlechas.forEach((tpl) => {
+    const opt = document.createElement("option");
+    opt.value = tpl.id;
+    opt.textContent = `${tpl.nombre} (${tpl.cantidadEquipos} eq • ${tpl.alturaTorre}m)`;
+    sel.appendChild(opt);
+  });
+
+  if (prevVal) sel.value = prevVal;
+}
+
+/* =========================================================
+   SINCRONIZACIÓN BIDIRECCIONAL ENTRE LAS 4 PESTAÑAS
+   ========================================================= */
+
+const USER_TEMPLATE_KEY = "esquemas_tecnicos_plantilla_usuario_v1";
+
+// Preajuste vertical (topY, bottomY) por tipo de torre para la pestaña 4
+const PREAJUSTE_RANGO_TORRE = {
+  arbol: { topY: 0.14, bottomY: 0.86 },
+  monopolo: { topY: 0.12, bottomY: 0.88 },
+  autosoportada_normal: { topY: 0.11, bottomY: 0.89 },
+  arriostrada_escalera_gato: { topY: 0.14, bottomY: 0.72 },
+  ventada_edificio: { topY: 0.14, bottomY: 0.68 },
+  ventada_piso: { topY: 0.12, bottomY: 0.88 },
+  autosoportada_encima: { topY: 0.11, bottomY: 0.89 },
+  arriostrada_edificio_normal: { topY: 0.14, bottomY: 0.68 }
+};
+
+let ultimaAlturaTorreSync = parseFloat(document.getElementById("alturaTorre")?.value) || 30.0;
+
+function obtenerSimboloDesdeModelo(modelo) {
+  if (modelo === "arbol" || modelo === "monopolo") return "monopolo";
+  if (modelo === "ventada_edificio" || modelo === "ventada_piso") return "ventada";
+  if (modelo === "arriostrada_escalera_gato" || modelo === "arriostrada_edificio_normal") return "arriostrada";
+  return "auto_cuadrado";
+}
+
+function sincronizarModeloTorreGlobal(modelo, origen = "") {
+  const globalSel = document.getElementById("globalTipoTorre");
+  const torreSel = document.getElementById("torreTipo");
   const spatSel = document.getElementById("spatTipoTorre");
   const perSel = document.getElementById("perTipoTorre");
-  if (spatSel) spatSel.value = simboloEquivalente;
-  if (perSel) perSel.value = simboloEquivalente;
+
+  if (globalSel && origen !== "globalTipoTorre") globalSel.value = modelo;
+  if (torreSel && origen !== "torreTipo") torreSel.value = modelo;
+
+  const simbolo = obtenerSimboloDesdeModelo(modelo);
+  if (spatSel) spatSel.value = simbolo;
+  if (perSel) perSel.value = simbolo;
+
+  // Aplicar preajuste de rango vertical en las fotos de pestaña 4
+  const rango = PREAJUSTE_RANGO_TORRE[modelo] || { topY: 0.14, bottomY: 0.86 };
+  fotosPanoramicas.forEach((f) => {
+    f.topY = rango.topY;
+    f.bottomY = rango.bottomY;
+    calcularCalloutsParaFoto(f);
+  });
 }
 
-function sincronizarAlturaTorreHaciaEquipos() {
-  const altTorre = parseFloat(document.getElementById("alturaTorre").value);
-  const inpRef = document.getElementById("equiposAlturaRef");
-  if (inpRef && !isNaN(altTorre) && altTorre > 0) {
-    inpRef.value = altTorre.toFixed(2);
-    recalcularYRenderizarTodasFotos();
-  }
+function sincronizarSimboloDesdePestana1o2(simbolo, origen) {
+  const spatSel = document.getElementById("spatTipoTorre");
+  const perSel = document.getElementById("perTipoTorre");
+  if (spatSel && origen !== "spatTipoTorre") spatSel.value = simbolo;
+  if (perSel && origen !== "perTipoTorre") perSel.value = simbolo;
 }
+
+function sincronizarAlturaGlobal(nuevaAltura, origen = "") {
+  const val = parseFloat(nuevaAltura);
+  if (isNaN(val) || val <= 0) return;
+  const formatted = val.toFixed(2);
+
+  const gAlt = document.getElementById("globalAlturaTorre");
+  const tAlt = document.getElementById("alturaTorre");
+  const eAlt = document.getElementById("equiposAlturaRef");
+
+  if (gAlt && origen !== "globalAlturaTorre") gAlt.value = formatted;
+  if (tAlt && origen !== "alturaTorre") tAlt.value = formatted;
+  if (eAlt && origen !== "equiposAlturaRef") eAlt.value = formatted;
+
+  ultimaAlturaTorreSync = val;
+  recalcularYRenderizarTodasFotos();
+}
+
 
 /* =========================================================
    PESTAÑA 1: DIAGRAMA SPAT (F12M)
@@ -1524,6 +1841,12 @@ function renderizarTablaEquipos() {
       renderizarTablaEquipos();
       recalcularYRenderizarTodasFotos();
     });
+    inpAltura.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        document.getElementById("btnAgregarEquipo")?.click();
+      }
+    });
 
     // Botón toggle de 1 toque: AUTO -> IZQ -> DER -> AUTO
     const btnLado = document.createElement("button");
@@ -1866,6 +2189,11 @@ document.getElementById("equiposFotos").addEventListener("change", (e) => {
           bottomY: 0.86,
           calibratingStep: 0
         };
+        const mejorPrevio = buscarMejorSitioAprendido();
+        if (mejorPrevio && mejorPrevio.modeloTorre === (document.getElementById("torreTipo")?.value || "arbol")) {
+          nuevaFoto.topY = mejorPrevio.topY;
+          nuevaFoto.bottomY = mejorPrevio.bottomY;
+        }
         calcularCalloutsParaFoto(nuevaFoto);
         fotosPanoramicas.push(nuevaFoto);
 
@@ -2078,6 +2406,7 @@ function descargarTodasFotosUnidas() {
   // Restaurar vista normal en pantalla
   fotosPanoramicas.forEach((foto) => renderizarFotoEquipos(foto));
 
+  aprenderSitioActual(true);
   descargarCanvasElement(mergedCanvas, `ESQUEMA_EQUIPOS_TORRE_${getSitioSlug()}.png`);
 }
 
@@ -2151,7 +2480,7 @@ tabBtns.forEach((btn, idx) => {
 });
 
 const allInputs = [
-  "sitio",
+  "sitio", "globalTipoTorre", "globalAlturaTorre",
   "spatTipoTorre", "cantidadPozos", "val50", "val60", "val70",
   "perAncho", "perLargo", "perTipoTorre", "coordA", "coordB", "coordC", "coordD",
   "torreTipo", "alturaTorre", "alturaBase", "roldanaSup", "roldanaInf",
@@ -2194,26 +2523,145 @@ allInputs.forEach((id) => {
   const el = document.getElementById(id);
   if (el) {
     const onChangeHandler = () => {
-      if (id === "torreTipo") {
-        sincronizarDesdeModeloTorre();
-      } else if (id === "alturaTorre") {
-        sincronizarAlturaTorreHaciaEquipos();
+      if (id === "torreTipo" || id === "globalTipoTorre") {
+        sincronizarModeloTorreGlobal(el.value, id);
+      } else if (id === "spatTipoTorre" || id === "perTipoTorre") {
+        sincronizarSimboloDesdePestana1o2(el.value, id);
+      } else if (id === "alturaTorre" || id === "globalAlturaTorre" || id === "equiposAlturaRef") {
+        sincronizarAlturaGlobal(el.value, id);
       }
 
       guardarEstadoLocal();
-
-      if (id === "sitio" || id === "torreTipo") {
-        dibujarTodo();
-      } else {
-        const activeBtn = document.querySelector(".tab-btn.active");
-        const activeTabId = activeBtn ? activeBtn.getAttribute("data-tab") : null;
-        dibujarTabActiva(activeTabId);
-      }
+      dibujarTodo();
     };
     el.addEventListener("input", onChangeHandler);
     el.addEventListener("change", onChangeHandler);
   }
 });
+
+// Enlazado automático de fecha/GPS desde Timestamp Camera hacia SPAT/Perímetro/Sitio
+
+// Panel Ajuste Masivo de Alturas (+/- m) y Plantilla de Usuario
+const btnAjusteMasivo = document.getElementById("btnAjusteMasivoAlturas");
+if (btnAjusteMasivo) {
+  btnAjusteMasivo.addEventListener("click", () => {
+    const p = document.getElementById("panelAjusteAlturas");
+    p.hidden = !p.hidden;
+    document.getElementById("panelPlantillasEquipos").hidden = true;
+    document.getElementById("panelPegarEquipos").hidden = true;
+  });
+}
+
+document.getElementById("btnCerrarAjusteAlturas")?.addEventListener("click", () => {
+  document.getElementById("panelAjusteAlturas").hidden = true;
+});
+
+function aplicarDeltaAlturas(signo) {
+  const delta = parseFloat(document.getElementById("inpDeltaAltura")?.value) || 0;
+  if (delta === 0) return;
+  listaEquipos.forEach((eq) => {
+    const actual = parseFloat(eq.altura) || 0;
+    eq.altura = Number(Math.max(0.5, actual + signo * delta).toFixed(2));
+  });
+  listaEquipos.sort((a, b) => (parseFloat(b.altura) || 0) - (parseFloat(a.altura) || 0));
+  guardarEstadoLocal();
+  renderizarTablaEquipos();
+  recalcularYRenderizarTodasFotos();
+}
+
+document.getElementById("btnSumarDeltaAltura")?.addEventListener("click", () => aplicarDeltaAlturas(1));
+document.getElementById("btnRestarDeltaAltura")?.addEventListener("click", () => aplicarDeltaAlturas(-1));
+
+document.getElementById("btnEscalarProporcional")?.addEventListener("click", () => {
+  const nuevaMax = parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30;
+  const maxActual = listaEquipos.length
+    ? Math.max(...listaEquipos.map((e) => parseFloat(e.altura) || 0))
+    : 0;
+  if (maxActual <= 0 || nuevaMax <= 0) return;
+  const factor = nuevaMax / maxActual;
+  listaEquipos.forEach((eq) => {
+    const h = parseFloat(eq.altura) || 0;
+    eq.altura = Number(Math.max(0.5, h * factor).toFixed(2));
+  });
+  listaEquipos.sort((a, b) => (parseFloat(b.altura) || 0) - (parseFloat(a.altura) || 0));
+  guardarEstadoLocal();
+  renderizarTablaEquipos();
+  recalcularYRenderizarTodasFotos();
+});
+
+document.getElementById("btnGuardarPlantillaUsuario")?.addEventListener("click", () => {
+  try {
+    localStorage.setItem(USER_TEMPLATE_KEY, JSON.stringify(listaEquipos));
+    setAviso("avisoEquipos", "Lista actual guardada como tu plantilla personal en este navegador.", "warning");
+  } catch (_) {}
+});
+
+document.getElementById("btnCargarPlantillaUsuario")?.addEventListener("click", () => {
+  try {
+    const raw = localStorage.getItem(USER_TEMPLATE_KEY);
+    if (!raw) {
+      setAviso("avisoEquipos", "Aún no tienes una plantilla guardada. Usa 'Guardar Lista Actual como Mi Plantilla' primero.", "warning");
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      listaEquipos = parsed.map((item, idx) => ({ ...item, id: Date.now() + idx + Math.random() }));
+      guardarEstadoLocal();
+      renderizarTablaEquipos();
+      recalcularYRenderizarTodasFotos();
+      setAviso("avisoEquipos", "");
+    }
+  } catch (_) {}
+});
+
+// Nuevo Sitio manteniendo estructura y lista de equipos como base
+document.getElementById("btnNuevoSitioConBase")?.addEventListener("click", () => {
+  fotosPanoramicas = [];
+  construirGaleriaEquipos();
+  const ocrBar = document.getElementById("ocrStatusBar");
+  if (ocrBar) ocrBar.hidden = true;
+  const sitioInput = document.getElementById("sitio");
+  if (sitioInput) {
+    sitioInput.value = "";
+    sitioInput.focus();
+  }
+  ["coordA", "coordB", "coordC", "coordD"].forEach((cid) => {
+    const el = document.getElementById(cid);
+    if (el) el.value = "";
+  });
+  guardarEstadoLocal();
+  dibujarTodo();
+});
+
+// Descarga por lote de todas las pestañas del F10 en secuencia rápida
+document.getElementById("btnDescargarTodoLote")?.addEventListener("click", () => {
+  dibujarTodo();
+  const modelo = (document.getElementById("torreTipo")?.value || "TORRE").toUpperCase();
+  const tareas = [
+    () => descargarCanvas("canvasSpat", "1_ESQUEMA_SPAT"),
+    () => descargarCanvas("canvasPerimetro", "2_ESQUEMA_PERIMETRO"),
+    () => descargarCanvas("canvasTorre", `3_ESQUEMA_TORRE_${modelo}`)
+  ];
+  if (fotosPanoramicas.length > 0) {
+    tareas.push(() => descargarTodasFotosUnidas());
+  }
+  tareas.forEach((fn, idx) => {
+    setTimeout(fn, idx * 380);
+  });
+});
+
+// Atajo rápido de teclado: Ctrl+Enter descarga el esquema de la pestaña activa
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    const activeTab = document.querySelector(".tab-btn.active")?.getAttribute("data-tab");
+    if (activeTab === "tabSpat") document.getElementById("btnDescargarSpat")?.click();
+    else if (activeTab === "tabPerimetro") document.getElementById("btnDescargarPer")?.click();
+    else if (activeTab === "tabTorre") document.getElementById("btnDescargarTorre")?.click();
+    else if (activeTab === "tabEquipos") document.getElementById("btnDescargarUnidaEquipos")?.click();
+  }
+});
+
 
 const btnResetTodo = document.getElementById("btnResetTodo");
 if (btnResetTodo) {
@@ -2245,6 +2693,90 @@ document.getElementById("btnDescargarTorre").addEventListener("click", () => {
 });
 
 restaurarEstadoLocal();
+
+document.getElementById("btnAprenderSitioActual")?.addEventListener("click", () => aprenderSitioActual(false));
+document.getElementById("btnAplicarAprendizajeAuto")?.addEventListener("click", ejecutarAutoLlenadoDesdeAprendizaje);
+document.getElementById("btnAutoAcomodarRapido")?.addEventListener("click", ejecutarAutoLlenadoDesdeAprendizaje);
+document.getElementById("btnGuardarPlantillaFlechas")?.addEventListener("click", guardarPlantillaFlechasPersonalizada);
+
+document.getElementById("btnAplicarPlantillaGuardada")?.addEventListener("click", () => {
+  const id = document.getElementById("selPlantillasGuardadas")?.value;
+  if (!id) {
+    setAviso("avisoEquipos", "Selecciona primero una plantilla de la lista.", "warning");
+    return;
+  }
+  const db = cargarBaseConocimiento();
+  const tpl = db.plantillasFlechas.find((p) => p.id === id);
+  if (!tpl) return;
+
+  if (tpl.modeloTorre) {
+    sincronizarModeloTorreGlobal(tpl.modeloTorre, "plantilla");
+  }
+  if (tpl.alturaTorre) {
+    sincronizarAlturaGlobal(tpl.alturaTorre, "plantilla");
+  }
+  aplicarGeometriaAprendidaAFotos(tpl, true);
+  dibujarTodo();
+  setAviso("avisoEquipos", `Plantilla "${tpl.nombre}" aplicada (equipos, alturas y posiciones de flechas).`, "warning");
+});
+
+document.getElementById("btnEliminarPlantillaGuardada")?.addEventListener("click", () => {
+  const id = document.getElementById("selPlantillasGuardadas")?.value;
+  if (!id) return;
+  const db = cargarBaseConocimiento();
+  db.plantillasFlechas = db.plantillasFlechas.filter((p) => p.id !== id);
+  guardarBaseConocimiento(db);
+});
+
+document.getElementById("btnExportarCerebro")?.addEventListener("click", () => {
+  const db = cargarBaseConocimiento();
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `APRENDIZAJE_TORRES_${db.sitiosAprendidos.length}_SITIOS.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("inputImportarCerebro")?.addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const incoming = JSON.parse(ev.target.result);
+      const db = cargarBaseConocimiento();
+      if (Array.isArray(incoming.sitiosAprendidos)) {
+        incoming.sitiosAprendidos.forEach((s) => {
+          const idx = db.sitiosAprendidos.findIndex((x) => x.sitio === s.sitio);
+          if (idx >= 0) db.sitiosAprendidos[idx] = s;
+          else db.sitiosAprendidos.push(s);
+        });
+      }
+      if (Array.isArray(incoming.plantillasFlechas)) {
+        incoming.plantillasFlechas.forEach((p) => {
+          const idx = db.plantillasFlechas.findIndex((x) => x.nombre === p.nombre);
+          if (idx >= 0) db.plantillasFlechas[idx] = p;
+          else db.plantillasFlechas.push(p);
+        });
+      }
+      guardarBaseConocimiento(db);
+      setAviso(
+        "avisoEquipos",
+        `Base importada: ${db.sitiosAprendidos.length} sitios aprendidos y ${db.plantillasFlechas.length} plantillas disponibles.`,
+        "warning"
+      );
+    } catch (_) {
+      setAviso("avisoEquipos", "El archivo JSON de aprendizaje no es válido.", "error");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+actualizarUIPlantillasAprendidas();
+
 renderizarTablaEquipos();
 dibujarTodo();
 
