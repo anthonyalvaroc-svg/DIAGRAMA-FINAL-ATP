@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</title>
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=10" />
+  <!-- Librerías ligeras opcionales (degradan con elegancia si no hay red) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 </head>
 <body>
   <div class="container">
@@ -12,7 +15,7 @@
       <div class="header-row">
         <div>
           <h1>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</h1>
-          <p class="sub">Completa los datos técnicos y descarga los planos en formato PNG.</p>
+          <p class="sub">Completa los datos técnicos o importa desde tus fotos/Excel y descarga cada plano en PNG.</p>
         </div>
         <button type="button" id="btnResetTodo" class="btn-action btn-ghost" title="Restablecer valores por defecto">
           Restablecer Datos
@@ -22,9 +25,14 @@
 
     <!-- Barra superior compartida -->
     <section class="shared-site-bar">
-      <div class="field shared-field">
-        <label for="sitio">CÓDIGO / NOMBRE DEL SITIO</label>
-        <input type="text" id="sitio" value="LI0123_SITIO" placeholder="Ej. LI0123_SITIO" />
+      <div class="shared-bar-grid">
+        <div class="field">
+          <label for="sitio">CÓDIGO / NOMBRE DEL SITIO</label>
+          <input type="text" id="sitio" value="LI0123_SITIO" placeholder="Ej. LI0123_SITIO" />
+        </div>
+        <div class="shared-sync-badge" id="syncStatusBadge" title="Los cambios de sitio, tipo de torre y altura se sincronizan entre pestañas">
+          Sincronización activa entre pestañas
+        </div>
       </div>
     </section>
 
@@ -278,64 +286,85 @@
         </div>
       </div>
 
+      <!-- Barra de lectura automática Timestamp Camera / GPS -->
+      <div id="ocrStatusBar" class="ocr-bar" hidden></div>
+
       <!-- Lista de Equipos según su altura -->
       <div class="equipos-box">
         <div class="equipos-box-header">
           <div>
             <strong>2. Lista de Equipos según su Altura</strong>
-            <span class="hint-inline">Se ordenan automáticamente de mayor a menor altura y se proyectan con flechas rojas sobre cada foto.</span>
+            <span class="hint-inline">Ordenados de mayor a menor altura. Usa el botón <strong>IZQ / DER</strong> para cambiar el lado en 1 toque.</span>
           </div>
           <div class="equipos-quick-actions">
-            <button type="button" id="btnPegarListaEquipos" class="btn-action btn-ghost">Pegar desde Excel / Lista</button>
+            <label class="btn-action btn-ghost file-btn-label" title="Subir archivo Excel (.xlsx, .xls), CSV o captura de lista (.jpg, .jpeg, .png)">
+              Subir Excel / CSV / JPG / PNG
+              <input type="file" id="inputExcelEquipos" accept=".xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,image/jpeg,image/png" hidden />
+            </label>
+            <button type="button" id="btnPegarListaEquipos" class="btn-action btn-ghost">Pegar Lista / Portal</button>
+            <button type="button" id="btnPlantillasEquipos" class="btn-action btn-ghost">Plantillas Rápidas</button>
             <button type="button" id="btnAgregarEquipo" class="btn-action btn-secondary">+ Agregar Equipo</button>
+          </div>
+        </div>
+
+        <!-- Panel de Plantillas Rápidas -->
+        <div id="panelPlantillasEquipos" class="paste-panel" hidden>
+          <label>Selecciona una plantilla base según la configuración de la torre (reemplaza la lista actual):</label>
+          <div class="actions" style="margin-top:8px; margin-bottom:0;">
+            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="3sectores">3 Sectores Estándar (6 RF + 6 RRU + 1 MW)</button>
+            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="arbol">Monopolo / Árbol (3 RF + 6 RRU + 1 MW)</button>
+            <button type="button" class="btn-action btn-secondary btn-tpl" data-tpl="autosoportada_full">Autosoportada Multi-operador (9 RF + 9 RRU + 2 MW + GPS)</button>
+            <button type="button" id="btnCerrarPlantillas" class="btn-action btn-ghost">Cerrar</button>
           </div>
         </div>
 
         <!-- Panel desplegable para pegado masivo -->
         <div id="panelPegarEquipos" class="paste-panel" hidden>
-          <label for="txtPegarEquipos">Pega aquí líneas con formato: <code>ETIQUETA | ALTURA(m) | LADO (IZQ/DER, opcional)</code> — Ejemplo: <code>RF 1	28.5	DER</code></label>
-          <textarea id="txtPegarEquipos" rows="5" placeholder="RF 1	28.50	DER&#10;RRU 2	28.20	DER&#10;MW 4	29.10	IZQ&#10;GPS 10	15.00	IZQ"></textarea>
+          <label for="txtPegarEquipos">Pega aquí líneas desde Excel o el portal ATP (detecta automáticamente <code>RF / RRU / MW / GPS</code>, número y altura en metros):</label>
+          <textarea id="txtPegarEquipos" rows="5" placeholder="Ejemplos válidos:&#10;RF 1	28.50	DER&#10;RRU 2	28.20	IZQ&#10;O pega filas completas del inventario con tipo, número y altura..."></textarea>
           <div class="actions" style="margin-top:8px; margin-bottom:0;">
             <button type="button" id="btnProcesarPegadoEquipos" class="btn-action btn-primary">Importar Lista</button>
             <button type="button" id="btnCerrarPegadoEquipos" class="btn-action btn-ghost">Cancelar</button>
           </div>
         </div>
 
-        <div class="table-scroll">
-          <table class="equipos-table" id="tablaEquipos">
-            <thead>
-              <tr>
-                <th style="width: 34%;">Equipo / Código (Ej. RF 1, RRU 2, MW 4, GPS 10)</th>
-                <th style="width: 22%;">Altura (m)</th>
-                <th style="width: 24%;">Lado de Etiqueta</th>
-                <th style="width: 20%;">Acción</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyEquipos"></tbody>
-          </table>
+        <!-- Lista responsive (tarjetas compactas en móvil, filas limpias en PC) -->
+        <div class="equipos-list-header" aria-hidden="true">
+          <span>Equipo / Código</span>
+          <span>Altura (m)</span>
+          <span>Lado</span>
+          <span>Quitar</span>
         </div>
+        <div id="listaEquiposContainer" class="equipos-list-container"></div>
       </div>
 
       <div id="avisoEquipos" class="notice" hidden></div>
 
       <div class="actions">
-        <button type="button" id="btnAutoDistribuirEquipos" class="btn-action btn-secondary">Recalcular Flechas Automáticas</button>
-        <button type="button" id="btnDescargarTodasFotos" class="btn-action btn-primary">Descargar Todas las Fotos PNG</button>
+        <button type="button" id="btnDescargarUnidaEquipos" class="btn-action btn-primary">Descargar Todo en 1 Imagen (PNG)</button>
+        <select id="equiposLayoutUnido" class="select-inline-action" aria-label="Disposición de imagen unida" title="Cómo acomodar las fotos al descargarlas juntas">
+          <option value="horizontal" selected>Unir: Lado a lado (Horizontal)</option>
+          <option value="grid2x2">Unir: Cuadrícula (2x2)</option>
+          <option value="vertical">Unir: Una debajo de otra (Vertical)</option>
+        </select>
+        <button type="button" id="btnAutoDistribuirEquipos" class="btn-action btn-secondary">Recalcular Flechas</button>
+        <button type="button" id="btnAlinearMargenes" class="btn-action btn-ghost">Alinear Etiquetas en Margen</button>
+        <button type="button" id="btnToggleLockDrag" class="btn-action btn-ghost" aria-pressed="false">Bloquear Arrastre en Fotos</button>
         <button type="button" id="btnLimpiarFotosEquipos" class="btn-action btn-ghost">Quitar Fotos</button>
       </div>
 
-      <p class="drag-tip">
-        <strong>Ajuste fino interactivo:</strong> Arrastra el <strong>texto rojo</strong> para mover la etiqueta o arrastra el <strong>punto rojo</strong> sobre la torre para apuntar exactamente a la antena/RRU en cada foto.
+      <p class="drag-tip" id="dragTipBanner">
+        <strong>Ajuste táctil de precisión:</strong> Arrastra el <strong>texto rojo</strong> o el <strong>punto rojo</strong> en cada foto (en celular la punta se eleva sobre tu dedo para que veas dónde apuntas). También puedes usar <strong>"Calibrar Cima/Base"</strong> en cada foto si es un zoom parcial.
       </p>
 
       <div id="galeriaEquipos" class="galeria-equipos">
         <div class="empty-photos-msg">
-          Sube de 1 a 4 fotos panorámicas de la torre para generar automáticamente las flechas rojas y etiquetas según la lista de alturas.
+          Sube de 1 a 4 fotos panorámicas de la torre para generar automáticamente las flechas rojas y etiquetas según la lista de alturas. Luego descarga todas juntas en 1 sola imagen PNG (botón verde) o cada foto por separado.
         </div>
       </div>
     </section>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

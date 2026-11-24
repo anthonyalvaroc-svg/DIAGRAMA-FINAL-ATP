@@ -1,5 +1,5 @@
 const FONT_SIZE_RELLENO = 16;
-const STORAGE_KEY = "esquemas_tecnicos_estado_v2";
+const STORAGE_KEY = "esquemas_tecnicos_estado_v3";
 
 function setFuenteRelleno(ctx, color = "#111827", align = "center", baseline = "middle", size = FONT_SIZE_RELLENO) {
   ctx.fillStyle = color;
@@ -222,6 +222,38 @@ function dibujarPuertaDobleHorizontal(ctx, x, y, anchoTotal, dirY = 1) {
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
+}
+
+/* =========================================================
+   SINCRONIZACIÓN INTELIGENTE ENTRE PESTAÑAS
+   ========================================================= */
+function sincronizarDesdeModeloTorre() {
+  const modelo = document.getElementById("torreTipo").value;
+  let simboloEquivalente = "auto_cuadrado";
+
+  if (modelo === "arbol" || modelo === "monopolo") {
+    simboloEquivalente = "monopolo";
+  } else if (modelo === "ventada_edificio" || modelo === "ventada_piso") {
+    simboloEquivalente = "ventada";
+  } else if (modelo === "arriostrada_escalera_gato" || modelo === "arriostrada_edificio_normal") {
+    simboloEquivalente = "arriostrada";
+  } else {
+    simboloEquivalente = "auto_cuadrado";
+  }
+
+  const spatSel = document.getElementById("spatTipoTorre");
+  const perSel = document.getElementById("perTipoTorre");
+  if (spatSel) spatSel.value = simboloEquivalente;
+  if (perSel) perSel.value = simboloEquivalente;
+}
+
+function sincronizarAlturaTorreHaciaEquipos() {
+  const altTorre = parseFloat(document.getElementById("alturaTorre").value);
+  const inpRef = document.getElementById("equiposAlturaRef");
+  if (inpRef && !isNaN(altTorre) && altTorre > 0) {
+    inpRef.value = altTorre.toFixed(2);
+    recalcularYRenderizarTodasFotos();
+  }
 }
 
 /* =========================================================
@@ -760,23 +792,6 @@ function dibujarTorreElevacion() {
         padY: 2
       });
     });
-
-    if (new URLSearchParams(window.location.search).get("calibrar") === "1") {
-      ctx.save();
-      ctx.strokeStyle = "rgba(37, 99, 235, 0.35)";
-      ctx.lineWidth = 1;
-      for (let i = 1; i < 10; i++) {
-        const gx = drawX + (drawW * i) / 10;
-        const gy = drawY + (drawH * i) / 10;
-        ctx.beginPath();
-        ctx.moveTo(gx, drawY);
-        ctx.lineTo(gx, drawY + drawH);
-        ctx.moveTo(drawX, gy);
-        ctx.lineTo(drawX + drawW, gy);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
   });
 }
 
@@ -812,22 +827,67 @@ if (btnRestaurarImg) {
 /* =========================================================
    PESTAÑA 4: ESQUEMA DE EQUIPOS EN TORRE (1 A 4 FOTOS PANORÁMICAS)
    ========================================================= */
-let listaEquipos = [
-  { id: 1, etiqueta: "MW 4", altura: 29.2, lado: "IZQ" },
-  { id: 2, etiqueta: "RF 5", altura: 28.8, lado: "DER" },
-  { id: 3, etiqueta: "RRU 3", altura: 28.2, lado: "DER" },
-  { id: 4, etiqueta: "RRU 6", altura: 28.0, lado: "IZQ" },
-  { id: 5, etiqueta: "RRU 7", altura: 27.6, lado: "IZQ" },
-  { id: 6, etiqueta: "RF 10", altura: 27.2, lado: "DER" },
-  { id: 7, etiqueta: "RRU 2", altura: 26.8, lado: "IZQ" },
-  { id: 8, etiqueta: "RRU 8", altura: 26.2, lado: "DER" },
-  { id: 9, etiqueta: "RF 1", altura: 25.5, lado: "IZQ" },
-  { id: 10, etiqueta: "RRU 9", altura: 25.0, lado: "DER" }
-];
+const PLANTILLAS_EQUIPOS = {
+  "3sectores": [
+    { etiqueta: "MW 1", altura: 29.5, lado: "IZQ" },
+    { etiqueta: "RF 1", altura: 28.5, lado: "IZQ" },
+    { etiqueta: "RF 2", altura: 28.5, lado: "DER" },
+    { etiqueta: "RF 3", altura: 28.5, lado: "DER" },
+    { etiqueta: "RRU 1", altura: 27.8, lado: "IZQ" },
+    { etiqueta: "RRU 2", altura: 27.8, lado: "DER" },
+    { etiqueta: "RRU 3", altura: 27.8, lado: "DER" },
+    { etiqueta: "RF 4", altura: 26.0, lado: "IZQ" },
+    { etiqueta: "RF 5", altura: 26.0, lado: "DER" },
+    { etiqueta: "RF 6", altura: 26.0, lado: "IZQ" },
+    { etiqueta: "RRU 4", altura: 25.3, lado: "IZQ" },
+    { etiqueta: "RRU 5", altura: 25.3, lado: "DER" },
+    { etiqueta: "RRU 6", altura: 25.3, lado: "IZQ" }
+  ],
+  "arbol": [
+    { etiqueta: "MW 4", altura: 29.2, lado: "IZQ" },
+    { etiqueta: "RF 5", altura: 28.8, lado: "DER" },
+    { etiqueta: "RRU 3", altura: 28.2, lado: "DER" },
+    { etiqueta: "RRU 6", altura: 28.0, lado: "IZQ" },
+    { etiqueta: "RRU 7", altura: 27.6, lado: "IZQ" },
+    { etiqueta: "RF 10", altura: 27.2, lado: "DER" },
+    { etiqueta: "RRU 2", altura: 26.8, lado: "IZQ" },
+    { etiqueta: "RRU 8", altura: 26.2, lado: "DER" },
+    { etiqueta: "RF 1", altura: 25.5, lado: "IZQ" },
+    { etiqueta: "RRU 9", altura: 25.0, lado: "DER" }
+  ],
+  "autosoportada_full": [
+    { etiqueta: "MW 1", altura: 34.0, lado: "IZQ" },
+    { etiqueta: "RF 1", altura: 33.0, lado: "IZQ" },
+    { etiqueta: "RF 2", altura: 33.0, lado: "DER" },
+    { etiqueta: "RF 3", altura: 33.0, lado: "DER" },
+    { etiqueta: "RRU 1", altura: 32.2, lado: "IZQ" },
+    { etiqueta: "RRU 2", altura: 32.2, lado: "DER" },
+    { etiqueta: "RRU 3", altura: 32.2, lado: "DER" },
+    { etiqueta: "RF 4", altura: 30.0, lado: "IZQ" },
+    { etiqueta: "RF 5", altura: 30.0, lado: "DER" },
+    { etiqueta: "RF 6", altura: 30.0, lado: "IZQ" },
+    { etiqueta: "RRU 4", altura: 29.2, lado: "IZQ" },
+    { etiqueta: "RRU 5", altura: 29.2, lado: "DER" },
+    { etiqueta: "RRU 6", altura: 29.2, lado: "IZQ" },
+    { etiqueta: "MW 2", altura: 26.5, lado: "DER" },
+    { etiqueta: "RF 7", altura: 25.0, lado: "IZQ" },
+    { etiqueta: "RF 8", altura: 25.0, lado: "DER" },
+    { etiqueta: "RF 9", altura: 25.0, lado: "IZQ" },
+    { etiqueta: "RRU 7", altura: 24.2, lado: "IZQ" },
+    { etiqueta: "RRU 8", altura: 24.2, lado: "DER" },
+    { etiqueta: "RRU 9", altura: 24.2, lado: "IZQ" },
+    { etiqueta: "GPS 1", altura: 18.0, lado: "IZQ" }
+  ]
+};
 
-// Almacena las fotos panorámicas cargadas (máx. 4)
-// Cada foto: { id, nombreArchivo, img, canvas, callouts: [...] }
+let listaEquipos = PLANTILLAS_EQUIPOS["arbol"].map((item, idx) => ({
+  id: idx + 1,
+  ...item
+}));
+
+// Cada foto: { id, nombreArchivo, img, canvas, callouts: [...], topY: 0.14, bottomY: 0.86, calibratingStep: 0 }
 let fotosPanoramicas = [];
+let bloqueoArrastre = false;
 
 function obtenerEquiposOrdenados() {
   return [...listaEquipos]
@@ -865,7 +925,6 @@ function agruparEquiposPorAltura(equiposOrdenados, agrupar) {
   });
 
   return grupos.map((g, idx) => {
-    // Compactar etiquetas si comparten prefijo (ej: RRU 12, RRU 13 -> RRU 12-13)
     const texto = formatearGrupoEtiquetas(g.items);
     const ladoFinal = g.lado === "AUTO" ? (idx % 2 === 0 ? "DER" : "IZQ") : g.lado;
     return {
@@ -878,7 +937,6 @@ function agruparEquiposPorAltura(equiposOrdenados, agrupar) {
 
 function formatearGrupoEtiquetas(items) {
   if (items.length <= 1) return items[0] || "";
-  // Verificar si todos tienen el mismo prefijo textual (ej. "RRU 12", "RRU 13")
   const parsed = items.map((str) => {
     const m = str.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s*[-_]?\s*(\d+.*)$/);
     return m ? { prefix: m[1].toUpperCase(), num: m[2] } : null;
@@ -896,14 +954,17 @@ function calcularCalloutsParaFoto(foto) {
   const grupos = agruparEquiposPorAltura(ordenados, agrupar);
 
   const alturaMax = Math.max(1, parseFloat(document.getElementById("equiposAlturaRef").value) || 30);
+  const topY = typeof foto.topY === "number" ? foto.topY : 0.14;
+  const bottomY = typeof foto.bottomY === "number" ? foto.bottomY : 0.86;
+  const spanY = Math.max(0.15, bottomY - topY);
+
   const izqItems = [];
   const derItems = [];
 
   grupos.forEach((g, idx) => {
     const lado = g.lado === "IZQ" || g.lado === "DER" ? g.lado : idx % 2 === 0 ? "DER" : "IZQ";
     const ratioH = Math.min(1, Math.max(0, g.altura / alturaMax));
-    // Mapear altura: la cima de la torre suele estar alrededor de y=0.14 y la base en y=0.86
-    const rawTargetY = 0.86 - ratioH * 0.72;
+    const rawTargetY = bottomY - ratioH * spanY;
     const item = {
       texto: g.texto,
       altura: g.altura,
@@ -917,19 +978,17 @@ function calcularCalloutsParaFoto(foto) {
     else derItems.push(item);
   });
 
-  // Evitar superposición vertical entre etiquetas del mismo lado
   const separarVertical = (arr) => {
     arr.sort((a, b) => a.labelY - b.labelY);
     const minGap = 0.044;
     for (let i = 1; i < arr.length; i++) {
       if (arr[i].labelY - arr[i - 1].labelY < minGap) {
-        arr[i].labelY = Math.min(0.92, arr[i - 1].labelY + minGap);
+        arr[i].labelY = Math.min(0.93, arr[i - 1].labelY + minGap);
       }
     }
-    // Si la última se pasó abajo, empujar hacia arriba
     for (let i = arr.length - 2; i >= 0; i--) {
       if (arr[i + 1].labelY - arr[i].labelY < minGap) {
-        arr[i].labelY = Math.max(0.08, arr[i + 1].labelY - minGap);
+        arr[i].labelY = Math.max(0.07, arr[i + 1].labelY - minGap);
       }
     }
   };
@@ -940,12 +999,47 @@ function calcularCalloutsParaFoto(foto) {
   foto.callouts = [...izqItems, ...derItems];
 }
 
+function alinearEtiquetasEnMargen() {
+  fotosPanoramicas.forEach((foto) => {
+    const izq = [];
+    const der = [];
+    foto.callouts.forEach((c) => {
+      if (c.labelX <= c.targetX) {
+        c.labelX = 0.16;
+        izq.push(c);
+      } else {
+        c.labelX = 0.84;
+        der.push(c);
+      }
+    });
+
+    const espaciar = (arr) => {
+      arr.sort((a, b) => a.targetY - b.targetY);
+      const minGap = 0.046;
+      arr.forEach((item) => (item.labelY = item.targetY));
+      for (let i = 1; i < arr.length; i++) {
+        if (arr[i].labelY - arr[i - 1].labelY < minGap) {
+          arr[i].labelY = Math.min(0.93, arr[i - 1].labelY + minGap);
+        }
+      }
+      for (let i = arr.length - 2; i >= 0; i--) {
+        if (arr[i + 1].labelY - arr[i].labelY < minGap) {
+          arr[i].labelY = Math.max(0.07, arr[i + 1].labelY - minGap);
+        }
+      }
+    };
+
+    espaciar(izq);
+    espaciar(der);
+    renderizarFotoEquipos(foto);
+  });
+}
+
 function dibujarFlechaRoja(ctx, fromX, fromY, toX, toY) {
   const headLen = 13;
   const angle = Math.atan2(toY - fromY, toX - fromX);
 
   ctx.save();
-  // Halo blanco sutil bajo la línea para que destaque incluso sobre antenas oscuras o cielo brillante
   ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
   ctx.lineWidth = 4.6;
   ctx.beginPath();
@@ -953,7 +1047,6 @@ function dibujarFlechaRoja(ctx, fromX, fromY, toX, toY) {
   ctx.lineTo(toX, toY);
   ctx.stroke();
 
-  // Línea roja principal
   ctx.strokeStyle = "#ef1d1d";
   ctx.fillStyle = "#ef1d1d";
   ctx.lineWidth = 2.6;
@@ -962,7 +1055,6 @@ function dibujarFlechaRoja(ctx, fromX, fromY, toX, toY) {
   ctx.lineTo(toX, toY);
   ctx.stroke();
 
-  // Punta de flecha en el equipo
   ctx.beginPath();
   ctx.moveTo(toX, toY);
   ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 7), toY - headLen * Math.sin(angle - Math.PI / 7));
@@ -970,9 +1062,8 @@ function dibujarFlechaRoja(ctx, fromX, fromY, toX, toY) {
   ctx.closePath();
   ctx.fill();
 
-  // Pequeño punto de anclaje arrastrable en la punta
   ctx.beginPath();
-  ctx.arc(toX, toY, 3.2, 0, Math.PI * 2);
+  ctx.arc(toX, toY, 3.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -983,7 +1074,6 @@ function dibujarTextoEquipoRojo(ctx, texto, x, y, align, fontSize) {
   ctx.textAlign = align;
   ctx.textBaseline = "middle";
 
-  // Contorno blanco suave para máxima legibilidad sobre nubes o estructura
   ctx.lineJoin = "round";
   ctx.lineWidth = 4;
   ctx.strokeStyle = "rgba(255, 255, 255, 0.88)";
@@ -994,13 +1084,12 @@ function dibujarTextoEquipoRojo(ctx, texto, x, y, align, fontSize) {
   ctx.restore();
 }
 
-function renderizarFotoEquipos(foto) {
+function renderizarFotoEquipos(foto, opciones = {}) {
   const canvas = foto.canvas;
   if (!canvas || !foto.img) return;
   const ctx = canvas.getContext("2d");
 
   const img = foto.img;
-  // Normalizar resolución de salida manteniendo la proporción exacta
   const targetW = 1000;
   const scale = targetW / img.naturalWidth;
   canvas.width = targetW;
@@ -1008,6 +1097,29 @@ function renderizarFotoEquipos(foto) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Si está en modo calibración de cima/base, dibujar guías visuales (solo en vista, no al exportar)
+  if (!opciones.paraExportar && foto.calibratingStep > 0) {
+    ctx.save();
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+    const yCima = foto.topY * canvas.height;
+    ctx.beginPath();
+    ctx.moveTo(0, yCima);
+    ctx.lineTo(canvas.width, yCima);
+    ctx.stroke();
+
+    if (foto.calibratingStep === 2) {
+      const yBase = foto.bottomY * canvas.height;
+      ctx.strokeStyle = "#10b981";
+      ctx.beginPath();
+      ctx.moveTo(0, yBase);
+      ctx.lineTo(canvas.width, yBase);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   const fontSize = parseInt(document.getElementById("equiposFontSize").value, 10) || 20;
 
@@ -1024,16 +1136,15 @@ function renderizarFotoEquipos(foto) {
     dibujarFlechaRoja(ctx, lineStartX, ly, tx, ty);
     dibujarTextoEquipoRojo(ctx, c.texto, lx, ly, align, fontSize);
 
-    // Guardar caja aproximada para detección de arrastre
     ctx.save();
     ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
     const w = ctx.measureText(c.texto).width;
     ctx.restore();
     c._hitBox = {
-      x1: esIzquierda ? lx - w - 10 : lx - 10,
-      x2: esIzquierda ? lx + 10 : lx + w + 10,
-      y1: ly - fontSize * 0.8,
-      y2: ly + fontSize * 0.8,
+      x1: esIzquierda ? lx - w - 14 : lx - 14,
+      x2: esIzquierda ? lx + 14 : lx + w + 14,
+      y1: ly - fontSize * 0.9,
+      y2: ly + fontSize * 0.9,
       tx,
       ty
     };
@@ -1046,26 +1157,55 @@ function renderizarTodasLasFotosEquipos() {
 
 function habilitarArrastreEnCanvas(foto) {
   const canvas = foto.canvas;
-  let dragging = null; // { callout, mode: 'label' | 'target' }
+  let dragging = null;
 
-  const getPos = (e) => {
+  const getPos = (e, applyTouchOffset = false) => {
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const isTouch = Boolean(e.touches && e.touches.length > 0);
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+    // En táctil, desplazar 42px hacia arriba al arrastrar para que el dedo no tape la punta de la flecha
+    const offsetClientY = isTouch && applyTouchOffset ? -42 : 0;
     return {
       x: ((clientX - rect.left) / rect.width) * canvas.width,
-      y: ((clientY - rect.top) / rect.height) * canvas.height
+      y: (((clientY + offsetClientY) - rect.top) / rect.height) * canvas.height
     };
   };
 
   const onDown = (e) => {
-    const pos = getPos(e);
-    // Buscar primero si tocó la punta de la flecha (target) o el texto (label)
+    // 1. Si está activo el asistente de 2 toques "Calibrar Cima / Base"
+    if (foto.calibratingStep === 1 || foto.calibratingStep === 2) {
+      e.preventDefault();
+      const pos = getPos(e, false);
+      const ny = Math.min(0.96, Math.max(0.03, pos.y / canvas.height));
+      if (foto.calibratingStep === 1) {
+        foto.topY = ny;
+        foto.calibratingStep = 2;
+        if (foto._calibBanner) {
+          foto._calibBanner.textContent = "Paso 2 de 2: Ahora toca en la foto donde termina la BASE (o el límite inferior de equipos).";
+        }
+        renderizarFotoEquipos(foto);
+      } else {
+        foto.bottomY = Math.max(foto.topY + 0.12, ny);
+        foto.calibratingStep = 0;
+        if (foto._calibBanner) {
+          foto._calibBanner.hidden = true;
+        }
+        calcularCalloutsParaFoto(foto);
+        renderizarFotoEquipos(foto);
+      }
+      return;
+    }
+
+    // 2. Si el usuario bloqueó el arrastre para hacer scroll tranquilo en el celular
+    if (bloqueoArrastre) return;
+
+    const pos = getPos(e, false);
     for (let i = foto.callouts.length - 1; i >= 0; i--) {
       const c = foto.callouts[i];
       if (!c._hitBox) continue;
       const distTarget = Math.hypot(pos.x - c._hitBox.tx, pos.y - c._hitBox.ty);
-      if (distTarget <= 18) {
+      if (distTarget <= 24) {
         dragging = { callout: c, mode: "target" };
         e.preventDefault();
         return;
@@ -1086,7 +1226,7 @@ function habilitarArrastreEnCanvas(foto) {
   const onMove = (e) => {
     if (!dragging) return;
     e.preventDefault();
-    const pos = getPos(e);
+    const pos = getPos(e, dragging.mode === "target");
     const nx = Math.min(0.97, Math.max(0.03, pos.x / canvas.width));
     const ny = Math.min(0.97, Math.max(0.03, pos.y / canvas.height));
 
@@ -1121,7 +1261,7 @@ function construirGaleriaEquipos() {
   if (fotosPanoramicas.length === 0) {
     galeria.innerHTML = `
       <div class="empty-photos-msg">
-        Sube de 1 a 4 fotos panorámicas de la torre para generar automáticamente las flechas rojas y etiquetas según la lista de alturas.
+        Sube de 1 a 4 fotos panorámicas de la torre para generar automáticamente las flechas rojas y etiquetas según la lista de alturas. Luego descarga cada foto por separado con su botón verde.
       </div>`;
     return;
   }
@@ -1136,9 +1276,18 @@ function construirGaleriaEquipos() {
     const title = document.createElement("span");
     title.className = "foto-card-title";
     title.textContent = `Foto Panorámica ${index + 1} (${foto.nombreArchivo})`;
+    header.appendChild(title);
 
     const actions = document.createElement("div");
     actions.className = "foto-card-actions";
+
+    const btnCalib = document.createElement("button");
+    btnCalib.type = "button";
+    btnCalib.className = "btn-action btn-ghost";
+    btnCalib.style.padding = "6px 10px";
+    btnCalib.style.fontSize = "12px";
+    btnCalib.textContent = "Calibrar Cima/Base";
+    btnCalib.title = "Marca en 2 toques dónde empieza y termina la torre en esta foto";
 
     const btnResetPos = document.createElement("button");
     btnResetPos.type = "button";
@@ -1147,6 +1296,10 @@ function construirGaleriaEquipos() {
     btnResetPos.style.fontSize = "12px";
     btnResetPos.textContent = "Auto-alinear";
     btnResetPos.addEventListener("click", () => {
+      foto.topY = 0.14;
+      foto.bottomY = 0.86;
+      foto.calibratingStep = 0;
+      if (foto._calibBanner) foto._calibBanner.hidden = true;
       calcularCalloutsParaFoto(foto);
       renderizarFotoEquipos(foto);
     });
@@ -1156,10 +1309,11 @@ function construirGaleriaEquipos() {
     btnDown.className = "btn-action btn-primary";
     btnDown.style.padding = "6px 12px";
     btnDown.style.fontSize = "12px";
-    btnDown.textContent = `Descargar Foto ${index + 1}`;
+    btnDown.textContent = `Descargar PNG ${index + 1}`;
     btnDown.addEventListener("click", () => {
-      renderizarFotoEquipos(foto);
+      renderizarFotoEquipos(foto, { paraExportar: true });
       descargarCanvasElement(foto.canvas, `ESQUEMA_EQUIPOS_TORRE_${index + 1}_${getSitioSlug()}.png`);
+      renderizarFotoEquipos(foto);
     });
 
     const btnDel = document.createElement("button");
@@ -1171,17 +1325,30 @@ function construirGaleriaEquipos() {
       construirGaleriaEquipos();
     });
 
+    actions.appendChild(btnCalib);
     actions.appendChild(btnResetPos);
     actions.appendChild(btnDown);
     actions.appendChild(btnDel);
 
-    header.appendChild(title);
-    header.appendChild(actions);
+    const calibBanner = document.createElement("div");
+    calibBanner.className = "calibracion-banner";
+    calibBanner.hidden = true;
+    foto._calibBanner = calibBanner;
+
+    btnCalib.addEventListener("click", () => {
+      foto.calibratingStep = 1;
+      calibBanner.textContent = "Paso 1 de 2: Toca en la foto la CIMA (punta superior) de la torre.";
+      calibBanner.hidden = false;
+      renderizarFotoEquipos(foto);
+    });
 
     const canvas = document.createElement("canvas");
+    if (bloqueoArrastre) canvas.classList.add("scroll-unlocked");
     foto.canvas = canvas;
 
     card.appendChild(header);
+    card.appendChild(actions);
+    card.appendChild(calibBanner);
     card.appendChild(canvas);
     galeria.appendChild(card);
 
@@ -1193,32 +1360,160 @@ function construirGaleriaEquipos() {
   });
 }
 
+/* =========================================================
+   LECTURA AUTOMÁTICA DE TIMESTAMP CAMERA (OCR LIGERO)
+   ========================================================= */
+async function extraerMetadatosTimestampCamera(img) {
+  const ocrBar = document.getElementById("ocrStatusBar");
+  if (!ocrBar) return;
+
+  if (typeof window.Tesseract === "undefined") {
+    return;
+  }
+
+  try {
+    ocrBar.hidden = false;
+    ocrBar.textContent = "Analizando sello GPS y nombre de sitio en la foto panorámica...";
+
+    // Recortar el 28% inferior derecho donde Timestamp Camera estampa fecha, GPS y sitio
+    const cropCanvas = document.createElement("canvas");
+    const cw = Math.round(img.naturalWidth * 0.58);
+    const ch = Math.round(img.naturalHeight * 0.28);
+    cropCanvas.width = cw;
+    cropCanvas.height = ch;
+    const cctx = cropCanvas.getContext("2d");
+    cctx.drawImage(
+      img,
+      img.naturalWidth - cw,
+      img.naturalHeight - ch,
+      cw,
+      ch,
+      0,
+      0,
+      cw,
+      ch
+    );
+
+    const result = await window.Tesseract.recognize(cropCanvas, "spa+eng");
+    const text = (result && result.data && result.data.text) ? result.data.text : "";
+    const lineas = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length >= 3);
+
+    if (!lineas.length) {
+      ocrBar.hidden = true;
+      return;
+    }
+
+    // Buscar coordenadas en grados o decimal (ej: 5°6'15"S 81°6'55"W o -5.1041, -81.1152)
+    let coordDetectada = "";
+    const regexDMS = /(\d{1,2}[°º]\s*\d{1,2}['’]\s*\d{1,2}(?:[.,]\d+)?["”]?\s*[NSns]\s*\d{1,3}[°º]\s*\d{1,2}['’]\s*\d{1,2}(?:[.,]\d+)?["”]?\s*[WOEwoe])/;
+    const regexDec = /(-?\d{1,2}\.\d{4,})\s*[,;\s]+\s*(-?\d{1,3}\.\d{4,})/;
+
+    for (const l of lineas) {
+      const mDec = l.match(regexDec);
+      if (mDec) {
+        coordDetectada = `${mDec[1]}, ${mDec[2]}`;
+        break;
+      }
+      const mDms = l.match(regexDMS);
+      if (mDms) {
+        // Convertir DMS a decimal limpio
+        const nums = mDms[1].match(/\d+(?:[.,]\d+)?/g);
+        const dirs = mDms[1].match(/[NSWOEnswoe]/g);
+        if (nums && nums.length >= 6 && dirs && dirs.length >= 2) {
+          const lat = (parseFloat(nums[0]) + parseFloat(nums[1]) / 60 + parseFloat(nums[2].replace(",", ".")) / 3600) * (dirs[0].toUpperCase() === "S" ? -1 : 1);
+          const lon = (parseFloat(nums[3]) + parseFloat(nums[4]) / 60 + parseFloat(nums[5].replace(",", ".")) / 3600) * (dirs[1].toUpperCase() === "W" || dirs[1].toUpperCase() === "O" ? -1 : 1);
+          coordDetectada = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+          break;
+        }
+      }
+    }
+
+    // La última línea limpia en mayúsculas suele ser el nombre del sitio (ej. CARR PAITA, NEW MARIATEGUI)
+    const candidatasSitio = lineas.filter(
+      (l) =>
+        !/\d{2}[:/]\d{2}/.test(l) &&
+        !/[°º'"]/.test(l) &&
+        !/^(piura|lima|tumbes|peru|perú|sullana|paita)$/i.test(l)
+    );
+    const sitioDetectado = candidatasSitio.length
+      ? candidatasSitio[candidatasSitio.length - 1].replace(/[^A-Za-z0-9ÁÉÍÓÚÑ _-]/g, "").trim().toUpperCase()
+      : "";
+
+    if (!sitioDetectado && !coordDetectada) {
+      ocrBar.hidden = true;
+      return;
+    }
+
+    ocrBar.innerHTML = "";
+    const msgSpan = document.createElement("span");
+    const partesMsg = [];
+    if (sitioDetectado) partesMsg.push(`Sitio detectado: <strong>${sitioDetectado}</strong>`);
+    if (coordDetectada) partesMsg.push(`GPS: <strong>${coordDetectada}</strong>`);
+    msgSpan.innerHTML = `Sello leído de la foto — ${partesMsg.join(" | ")}`;
+
+    const btnAplicar = document.createElement("button");
+    btnAplicar.type = "button";
+    btnAplicar.className = "btn-action btn-primary";
+    btnAplicar.style.padding = "6px 12px";
+    btnAplicar.style.fontSize = "12px";
+    btnAplicar.textContent = "Aplicar a Sitio y Perímetro";
+    btnAplicar.addEventListener("click", () => {
+      if (sitioDetectado) {
+        document.getElementById("sitio").value = sitioDetectado;
+      }
+      if (coordDetectada) {
+        ["coordA", "coordB", "coordC", "coordD"].forEach((cid) => {
+          const el = document.getElementById(cid);
+          if (el) el.value = coordDetectada;
+        });
+      }
+      guardarEstadoLocal();
+      dibujarTodo();
+      ocrBar.textContent = "Datos aplicados correctamente al encabezado del sitio y al Esquema 1 (Perímetro).";
+    });
+
+    ocrBar.appendChild(msgSpan);
+    ocrBar.appendChild(btnAplicar);
+  } catch (_) {
+    ocrBar.hidden = true;
+  }
+}
+
+/* =========================================================
+   RENDERIZADO DE FILAS COMPACTAS DE EQUIPOS (SIN RECORTES EN MÓVIL)
+   ========================================================= */
 function renderizarTablaEquipos() {
-  const tbody = document.getElementById("tbodyEquipos");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+  const container = document.getElementById("listaEquiposContainer");
+  if (!container) return;
+  container.innerHTML = "";
 
   listaEquipos.forEach((eq) => {
-    const tr = document.createElement("tr");
+    const row = document.createElement("div");
+    row.className = "equipo-row";
 
-    const tdNombre = document.createElement("td");
     const inpNombre = document.createElement("input");
     inpNombre.type = "text";
+    inpNombre.className = "col-codigo";
     inpNombre.value = eq.etiqueta;
-    inpNombre.placeholder = "Ej. RF 1, RRU 2, MW 4";
+    inpNombre.placeholder = "Ej. RF 1, RRU 2";
+    inpNombre.setAttribute("aria-label", "Código de equipo");
     inpNombre.addEventListener("input", () => {
       eq.etiqueta = inpNombre.value;
       guardarEstadoLocal();
       recalcularYRenderizarTodasFotos();
     });
-    tdNombre.appendChild(inpNombre);
 
-    const tdAltura = document.createElement("td");
     const inpAltura = document.createElement("input");
     inpAltura.type = "number";
+    inpAltura.className = "col-altura";
     inpAltura.step = "0.01";
     inpAltura.min = "0";
     inpAltura.value = eq.altura;
+    inpAltura.placeholder = "Altura (m)";
+    inpAltura.setAttribute("aria-label", "Altura en metros");
     inpAltura.addEventListener("input", () => {
       eq.altura = parseFloat(inpAltura.value) || 0;
       guardarEstadoLocal();
@@ -1229,46 +1524,51 @@ function renderizarTablaEquipos() {
       renderizarTablaEquipos();
       recalcularYRenderizarTodasFotos();
     });
-    tdAltura.appendChild(inpAltura);
 
-    const tdLado = document.createElement("td");
-    const selLado = document.createElement("select");
-    [
-      { val: "AUTO", label: "Automático (Alternado)" },
-      { val: "IZQ", label: "Izquierda" },
-      { val: "DER", label: "Derecha" }
-    ].forEach((opt) => {
-      const o = document.createElement("option");
-      o.value = opt.val;
-      o.textContent = opt.label;
-      if ((eq.lado || "AUTO") === opt.val) o.selected = true;
-      selLado.appendChild(o);
-    });
-    selLado.addEventListener("change", () => {
-      eq.lado = selLado.value;
+    // Botón toggle de 1 toque: AUTO -> IZQ -> DER -> AUTO
+    const btnLado = document.createElement("button");
+    btnLado.type = "button";
+    btnLado.className = "btn-lado-toggle col-lado";
+    const actualizarVisualLado = () => {
+      const l = eq.lado || "AUTO";
+      btnLado.classList.remove("lado-izq", "lado-der");
+      if (l === "IZQ") {
+        btnLado.textContent = "◀ Izquierda";
+        btnLado.classList.add("lado-izq");
+      } else if (l === "DER") {
+        btnLado.textContent = "Derecha ▶";
+        btnLado.classList.add("lado-der");
+      } else {
+        btnLado.textContent = "⇄ Auto";
+      }
+    };
+    actualizarVisualLado();
+
+    btnLado.addEventListener("click", () => {
+      const orden = ["AUTO", "IZQ", "DER"];
+      const next = orden[(orden.indexOf(eq.lado || "AUTO") + 1) % orden.length];
+      eq.lado = next;
+      actualizarVisualLado();
       guardarEstadoLocal();
       recalcularYRenderizarTodasFotos();
     });
-    tdLado.appendChild(selLado);
 
-    const tdAccion = document.createElement("td");
     const btnQuitar = document.createElement("button");
     btnQuitar.type = "button";
-    btnQuitar.className = "btn-danger-sm";
-    btnQuitar.textContent = "Eliminar";
+    btnQuitar.className = "btn-danger-sm col-del";
+    btnQuitar.textContent = "Quitar";
     btnQuitar.addEventListener("click", () => {
       listaEquipos = listaEquipos.filter((item) => item.id !== eq.id);
       guardarEstadoLocal();
       renderizarTablaEquipos();
       recalcularYRenderizarTodasFotos();
     });
-    tdAccion.appendChild(btnQuitar);
 
-    tr.appendChild(tdNombre);
-    tr.appendChild(tdAltura);
-    tr.appendChild(tdLado);
-    tr.appendChild(tdAccion);
-    tbody.appendChild(tr);
+    row.appendChild(inpNombre);
+    row.appendChild(inpAltura);
+    row.appendChild(btnLado);
+    row.appendChild(btnQuitar);
+    container.appendChild(row);
   });
 }
 
@@ -1278,6 +1578,257 @@ function recalcularYRenderizarTodasFotos() {
     renderizarFotoEquipos(foto);
   });
 }
+
+
+/* =========================================================
+   IMPORTACIÓN DE LISTA DE EQUIPOS DESDE IMAGEN (JPG / PNG)
+   ========================================================= */
+function preprocesarImagenTablaParaOcr(img) {
+  // Escalar a buen ancho (1600px) y aplicar alto contraste/escala de grises para leer tablas o capturas
+  const maxW = 1600;
+  const scale = img.naturalWidth > 0 ? Math.min(2.2, Math.max(1, maxW / img.naturalWidth)) : 1;
+  const w = Math.max(400, Math.round(img.naturalWidth * scale));
+  const h = Math.max(300, Math.round(img.naturalHeight * scale));
+
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.filter = "grayscale(100%) contrast(155%) brightness(105%)";
+  ctx.drawImage(img, 0, 0, w, h);
+  ctx.filter = "none";
+  return c;
+}
+
+function parsearTextoOcrListaEquipos(textoCrudo) {
+  const filas = [];
+  const lineas = (textoCrudo || "").split(/\r?\n/);
+
+  lineas.forEach((rawLine, idx) => {
+    // Limpiar ruido típico de OCR en bordes
+    const clean = rawLine
+      .replace(/[|]/g, " ")
+      .replace(/[“”"]/g, '"')
+      .trim();
+    if (clean.length < 3) return;
+
+    // Buscar código de equipo (RF 1, RRU2, MW-4, GPS 10, ANT 3, etc.)
+    const codeMatch = clean.match(/\b(RF|RRU|MW|GPS|ANT|BBU|ODU)\s*[-_.]?\s*(\d{1,3}[A-Za-z]?)\b/i);
+
+    // Buscar altura decimal o entera plausible (ej. 28.50, 28,5, 25.0 m, 18.20)
+    // Evitar confundir números pegados al código si hay otro número decimal/altura después
+    let textoSinCodigo = codeMatch
+      ? clean.replace(codeMatch[0], " ")
+      : clean;
+
+    const numMatches = [...textoSinCodigo.matchAll(/\b(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:M|MTS|METROS)?\b/gi)];
+    let altura = NaN;
+    for (const m of numMatches) {
+      const val = parseFloat(m[1].replace(",", "."));
+      if (!isNaN(val) && val >= 0.5 && val <= 150) {
+        altura = val;
+        break;
+      }
+    }
+
+    // Detectar lado si aparece explícito
+    let lado = "AUTO";
+    if (/\b(IZQ|IZQUIERDA|LEFT)\b/i.test(clean)) lado = "IZQ";
+    else if (/\b(DER|DERECHA|RIGHT)\b/i.test(clean)) lado = "DER";
+
+    if (codeMatch && !isNaN(altura) && altura > 0) {
+      const etiqueta = `${codeMatch[1].toUpperCase()} ${codeMatch[2].toUpperCase()}`;
+      filas.push({
+        id: Date.now() + idx + Math.random(),
+        etiqueta,
+        altura,
+        lado
+      });
+    }
+  });
+
+  return filas;
+}
+
+async function importarListaDesdeImagen(file) {
+  const container = document.getElementById("listaEquiposContainer");
+  let statusEl = document.getElementById("importImgStatus");
+  if (!statusEl && container && container.parentElement) {
+    statusEl = document.createElement("div");
+    statusEl.id = "importImgStatus";
+    statusEl.className = "import-img-status";
+    container.parentElement.insertBefore(statusEl, container);
+  }
+
+  if (typeof window.Tesseract === "undefined") {
+    setAviso(
+      "avisoEquipos",
+      "El lector OCR de imágenes (Tesseract) no está disponible sin conexión. Usa Excel/CSV o 'Pegar Lista / Portal'.",
+      "warning"
+    );
+    return;
+  }
+
+  try {
+    setAviso("avisoEquipos", "");
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = `Leyendo lista desde imagen "${file.name}" (OCR)...`;
+    }
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+
+    const procCanvas = preprocesarImagenTablaParaOcr(img);
+    const res = await window.Tesseract.recognize(procCanvas, "spa+eng");
+    const texto = res && res.data && res.data.text ? res.data.text : "";
+    const detectados = parsearTextoOcrListaEquipos(texto);
+
+    if (detectados.length > 0) {
+      detectados.sort((a, b) => b.altura - a.altura);
+      listaEquipos = detectados;
+      guardarEstadoLocal();
+      renderizarTablaEquipos();
+      recalcularYRenderizarTodasFotos();
+      if (statusEl) {
+        statusEl.textContent = `Se importaron ${detectados.length} equipo(s) desde "${file.name}". Revisa alturas y lados si es necesario.`;
+      }
+    } else {
+      if (statusEl) statusEl.hidden = true;
+      setAviso(
+        "avisoEquipos",
+        `No se detectaron filas claras de equipos y alturas en "${file.name}". Prueba con una captura más nítida o pega la lista manualmente.`,
+        "warning"
+      );
+    }
+  } catch (_) {
+    if (statusEl) statusEl.hidden = true;
+    setAviso("avisoEquipos", "No se pudo procesar la imagen de lista. Intenta con otro JPG/PNG o usa Excel/CSV.", "error");
+  }
+}
+
+/* =========================================================
+   IMPORTACIÓN INTELIGENTE DESDE EXCEL / CSV / PORTAL ATP
+   ========================================================= */
+function parsearLineasInventario(textoMultilinea) {
+  const nuevasFilas = [];
+  const lineas = textoMultilinea.split(/\r?\n/);
+
+  lineas.forEach((linea, idx) => {
+    const clean = linea.trim();
+    if (!clean) return;
+
+    // Caso 1: Formato directo "ETIQUETA | ALTURA | LADO"
+    const partes = clean.split(/[\t;|]+/).map((p) => p.trim()).filter(Boolean);
+    if (partes.length >= 2) {
+      // Buscar si alguna columna tiene código tipo RF/RRU/MW/GPS y otra tiene altura numérica
+      let etiqueta = "";
+      let altura = NaN;
+      let lado = "AUTO";
+
+      partes.forEach((p) => {
+        const up = p.toUpperCase();
+        if (!etiqueta && /^(RF|RRU|MW|GPS|ANT|BBU|ODU)\s*[-_]?\s*\d+/i.test(up)) {
+          etiqueta = up.replace(/\s+/g, " ");
+        } else if (isNaN(altura) && /^\d{1,2}(?:[.,]\d{1,2})?\s*M?$/i.test(up)) {
+          const val = parseFloat(up.replace("M", "").replace(",", "."));
+          if (val > 0 && val <= 150) altura = val;
+        } else if (up === "IZQ" || up === "IZQUIERDA" || up === "I") {
+          lado = "IZQ";
+        } else if (up === "DER" || up === "DERECHA" || up === "D") {
+          lado = "DER";
+        }
+      });
+
+      // Fallback si las 2 primeras columnas eran texto libre y número
+      if (!etiqueta && partes[0] && !/^\d+([.,]\d+)?$/.test(partes[0])) {
+        etiqueta = partes[0].toUpperCase();
+      }
+      if (isNaN(altura) && partes[1]) {
+        const val = parseFloat(partes[1].replace(",", "."));
+        if (!isNaN(val) && val > 0 && val <= 150) altura = val;
+      }
+
+      if (etiqueta && !isNaN(altura) && altura > 0) {
+        nuevasFilas.push({
+          id: Date.now() + idx + Math.random(),
+          etiqueta,
+          altura,
+          lado
+        });
+      }
+    }
+  });
+
+  return nuevasFilas;
+}
+
+document.getElementById("inputExcelEquipos").addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const lower = file.name.toLowerCase();
+  const mime = (file.type || "").toLowerCase();
+  if (
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png") ||
+    mime.startsWith("image/")
+  ) {
+    importarListaDesdeImagen(file);
+    e.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      let textoTabla = "";
+      if (file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt")) {
+        textoTabla = ev.target.result;
+      } else if (typeof window.XLSX !== "undefined") {
+        const workbook = window.XLSX.read(ev.target.result, { type: "array" });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        textoTabla = window.XLSX.utils.sheet_to_csv(firstSheet, { FS: "\t" });
+      } else {
+        setAviso("avisoEquipos", "No se pudo cargar el lector Excel sin conexión. Usa CSV o pega la tabla en 'Pegar Lista / Portal'.", "warning");
+        return;
+      }
+
+      const importados = parsearLineasInventario(textoTabla);
+      if (importados.length > 0) {
+        importados.sort((a, b) => b.altura - a.altura);
+        listaEquipos = importados;
+        guardarEstadoLocal();
+        renderizarTablaEquipos();
+        recalcularYRenderizarTodasFotos();
+        setAviso("avisoEquipos", "");
+      } else {
+        setAviso("avisoEquipos", "No se encontraron filas con código de equipo y altura en el archivo.", "warning");
+      }
+    } catch (_) {
+      setAviso("avisoEquipos", "Error al leer el archivo. Verifica que sea un Excel (.xlsx) o CSV válido.", "error");
+    }
+  };
+
+  if (file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt")) {
+    reader.readAsText(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+  e.target.value = "";
+});
 
 document.getElementById("equiposFotos").addEventListener("change", (e) => {
   const files = Array.from(e.target.files || []);
@@ -1297,7 +1848,9 @@ document.getElementById("equiposFotos").addEventListener("change", (e) => {
     setAviso("avisoEquipos", "");
   }
 
+  const eraPrimeraFoto = fotosPanoramicas.length === 0;
   let pendientes = seleccionados.length;
+
   seleccionados.forEach((file, i) => {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -1308,10 +1861,18 @@ document.getElementById("equiposFotos").addEventListener("change", (e) => {
           nombreArchivo: file.name,
           img,
           canvas: null,
-          callouts: []
+          callouts: [],
+          topY: 0.14,
+          bottomY: 0.86,
+          calibratingStep: 0
         };
         calcularCalloutsParaFoto(nuevaFoto);
         fotosPanoramicas.push(nuevaFoto);
+
+        if (eraPrimeraFoto && i === 0) {
+          extraerMetadatosTimestampCamera(img);
+        }
+
         pendientes--;
         if (pendientes === 0) {
           construirGaleriaEquipos();
@@ -1341,9 +1902,36 @@ document.getElementById("btnAgregarEquipo").addEventListener("click", () => {
   recalcularYRenderizarTodasFotos();
 });
 
+document.getElementById("btnPlantillasEquipos").addEventListener("click", () => {
+  const panel = document.getElementById("panelPlantillasEquipos");
+  panel.hidden = !panel.hidden;
+  document.getElementById("panelPegarEquipos").hidden = true;
+});
+
+document.getElementById("btnCerrarPlantillas").addEventListener("click", () => {
+  document.getElementById("panelPlantillasEquipos").hidden = true;
+});
+
+document.querySelectorAll(".btn-tpl").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const key = btn.getAttribute("data-tpl");
+    const tpl = PLANTILLAS_EQUIPOS[key];
+    if (!tpl) return;
+    listaEquipos = tpl.map((item, idx) => ({
+      id: Date.now() + idx + Math.random(),
+      ...item
+    }));
+    guardarEstadoLocal();
+    renderizarTablaEquipos();
+    recalcularYRenderizarTodasFotos();
+    document.getElementById("panelPlantillasEquipos").hidden = true;
+  });
+});
+
 document.getElementById("btnPegarListaEquipos").addEventListener("click", () => {
   const panel = document.getElementById("panelPegarEquipos");
   panel.hidden = !panel.hidden;
+  document.getElementById("panelPlantillasEquipos").hidden = true;
 });
 
 document.getElementById("btnCerrarPegadoEquipos").addEventListener("click", () => {
@@ -1354,29 +1942,7 @@ document.getElementById("btnProcesarPegadoEquipos").addEventListener("click", ()
   const raw = document.getElementById("txtPegarEquipos").value.trim();
   if (!raw) return;
 
-  const nuevasFilas = [];
-  raw.split(/\r?\n/).forEach((linea, idx) => {
-    const clean = linea.trim();
-    if (!clean) return;
-    // Soporta tabulaciones (Excel), punto y coma, barra vertical o coma
-    const partes = clean.split(/[\t;|]+/).map((p) => p.trim()).filter(Boolean);
-    if (partes.length >= 2) {
-      const etiqueta = partes[0].toUpperCase();
-      const altura = parseFloat(partes[1].replace(",", ".")) || 0;
-      let lado = "AUTO";
-      if (partes[2]) {
-        const l = partes[2].toUpperCase();
-        if (l.startsWith("I")) lado = "IZQ";
-        else if (l.startsWith("D")) lado = "DER";
-      }
-      nuevasFilas.push({
-        id: Date.now() + idx + Math.random(),
-        etiqueta,
-        altura,
-        lado
-      });
-    }
-  });
+  const nuevasFilas = parsearLineasInventario(raw);
 
   if (nuevasFilas.length > 0) {
     nuevasFilas.sort((a, b) => b.altura - a.altura);
@@ -1406,22 +1972,135 @@ document.getElementById("btnProcesarPegadoEquipos").addEventListener("click", ()
   }
 });
 
+
+function descargarTodasFotosUnidas() {
+  if (!fotosPanoramicas || fotosPanoramicas.length === 0) {
+    setAviso("avisoEquipos", "Primero sube al menos 1 foto panorámica para poder descargar la imagen.", "warning");
+    return;
+  }
+
+  // Renderizar cada foto limpia (sin líneas guía de calibración) antes de unir
+  fotosPanoramicas.forEach((foto) => renderizarFotoEquipos(foto, { paraExportar: true }));
+
+  const layout = (document.getElementById("equiposLayoutUnido")?.value) || "horizontal";
+  const count = fotosPanoramicas.length;
+  const gap = 14;
+  const pad = 16;
+
+  // Normalizar altura o ancho según disposición para que queden perfectamente alineadas
+  const mergedCanvas = document.createElement("canvas");
+  const mctx = mergedCanvas.getContext("2d");
+
+  if (count === 1) {
+    const c0 = fotosPanoramicas[0].canvas;
+    mergedCanvas.width = c0.width;
+    mergedCanvas.height = c0.height;
+    mctx.drawImage(c0, 0, 0);
+  } else if (layout === "horizontal") {
+    // Igualar altura de todas las fotos al promedio/máximo (1000px base) y colocarlas lado a lado
+    const targetH = Math.max(...fotosPanoramicas.map((f) => f.canvas.height));
+    const items = fotosPanoramicas.map((f) => {
+      const ratio = targetH / f.canvas.height;
+      return {
+        canvas: f.canvas,
+        w: Math.round(f.canvas.width * ratio),
+        h: targetH
+      };
+    });
+    const totalW = items.reduce((acc, it) => acc + it.w, 0) + gap * (count - 1) + pad * 2;
+    const totalH = targetH + pad * 2;
+    mergedCanvas.width = totalW;
+    mergedCanvas.height = totalH;
+
+    mctx.fillStyle = "#ffffff";
+    mctx.fillRect(0, 0, totalW, totalH);
+
+    let curX = pad;
+    items.forEach((it) => {
+      mctx.drawImage(it.canvas, curX, pad, it.w, it.h);
+      curX += it.w + gap;
+    });
+  } else if (layout === "vertical") {
+    const targetW = 1000;
+    const items = fotosPanoramicas.map((f) => {
+      const ratio = targetW / f.canvas.width;
+      return {
+        canvas: f.canvas,
+        w: targetW,
+        h: Math.round(f.canvas.height * ratio)
+      };
+    });
+    const totalW = targetW + pad * 2;
+    const totalH = items.reduce((acc, it) => acc + it.h, 0) + gap * (count - 1) + pad * 2;
+    mergedCanvas.width = totalW;
+    mergedCanvas.height = totalH;
+
+    mctx.fillStyle = "#ffffff";
+    mctx.fillRect(0, 0, totalW, totalH);
+
+    let curY = pad;
+    items.forEach((it) => {
+      mctx.drawImage(it.canvas, pad, curY, it.w, it.h);
+      curY += it.h + gap;
+    });
+  } else {
+    // Cuadrícula 2x2 (ideal para 2, 3 o 4 fotos)
+    const cols = 2;
+    const rows = Math.ceil(count / cols);
+    const cellW = 900;
+    const cellH = Math.max(
+      ...fotosPanoramicas.map((f) => Math.round((f.canvas.height / f.canvas.width) * cellW))
+    );
+
+    const totalW = cols * cellW + (cols - 1) * gap + pad * 2;
+    const totalH = rows * cellH + (rows - 1) * gap + pad * 2;
+    mergedCanvas.width = totalW;
+    mergedCanvas.height = totalH;
+
+    mctx.fillStyle = "#ffffff";
+    mctx.fillRect(0, 0, totalW, totalH);
+
+    fotosPanoramicas.forEach((f, idx) => {
+      const r = Math.floor(idx / cols);
+      const c = idx % cols;
+      const boxX = pad + c * (cellW + gap);
+      const boxY = pad + r * (cellH + gap);
+
+      const scale = Math.min(cellW / f.canvas.width, cellH / f.canvas.height);
+      const dw = Math.round(f.canvas.width * scale);
+      const dh = Math.round(f.canvas.height * scale);
+      const dx = boxX + Math.round((cellW - dw) / 2);
+      const dy = boxY + Math.round((cellH - dh) / 2);
+      mctx.drawImage(f.canvas, dx, dy, dw, dh);
+    });
+  }
+
+  // Restaurar vista normal en pantalla
+  fotosPanoramicas.forEach((foto) => renderizarFotoEquipos(foto));
+
+  descargarCanvasElement(mergedCanvas, `ESQUEMA_EQUIPOS_TORRE_${getSitioSlug()}.png`);
+}
+
+document.getElementById("btnDescargarUnidaEquipos").addEventListener("click", descargarTodasFotosUnidas);
+
 document.getElementById("btnAutoDistribuirEquipos").addEventListener("click", () => {
   listaEquipos.sort((a, b) => (parseFloat(b.altura) || 0) - (parseFloat(a.altura) || 0));
   renderizarTablaEquipos();
   recalcularYRenderizarTodasFotos();
 });
 
-document.getElementById("btnDescargarTodasFotos").addEventListener("click", () => {
-  if (fotosPanoramicas.length === 0) {
-    setAviso("avisoEquipos", "Primero sube entre 1 y 4 fotos panorámicas para descargarlas.", "warning");
-    return;
-  }
-  fotosPanoramicas.forEach((foto, idx) => {
-    renderizarFotoEquipos(foto);
-    setTimeout(() => {
-      descargarCanvasElement(foto.canvas, `ESQUEMA_EQUIPOS_TORRE_${idx + 1}_${getSitioSlug()}.png`);
-    }, idx * 220);
+document.getElementById("btnAlinearMargenes").addEventListener("click", alinearEtiquetasEnMargen);
+
+document.getElementById("btnToggleLockDrag").addEventListener("click", (e) => {
+  bloqueoArrastre = !bloqueoArrastre;
+  const btn = e.currentTarget;
+  btn.setAttribute("aria-pressed", String(bloqueoArrastre));
+  btn.textContent = bloqueoArrastre ? "Desbloquear Arrastre en Fotos" : "Bloquear Arrastre en Fotos";
+
+  fotosPanoramicas.forEach((f) => {
+    if (f.canvas) {
+      f.canvas.classList.toggle("scroll-unlocked", bloqueoArrastre);
+    }
   });
 });
 
@@ -1429,6 +2108,8 @@ document.getElementById("btnLimpiarFotosEquipos").addEventListener("click", () =
   fotosPanoramicas = [];
   construirGaleriaEquipos();
   setAviso("avisoEquipos", "");
+  const ocrBar = document.getElementById("ocrStatusBar");
+  if (ocrBar) ocrBar.hidden = true;
 });
 
 /* =========================================================
@@ -1513,8 +2194,15 @@ allInputs.forEach((id) => {
   const el = document.getElementById(id);
   if (el) {
     const onChangeHandler = () => {
+      if (id === "torreTipo") {
+        sincronizarDesdeModeloTorre();
+      } else if (id === "alturaTorre") {
+        sincronizarAlturaTorreHaciaEquipos();
+      }
+
       guardarEstadoLocal();
-      if (id === "sitio") {
+
+      if (id === "sitio" || id === "torreTipo") {
         dibujarTodo();
       } else {
         const activeBtn = document.querySelector(".tab-btn.active");
@@ -1555,16 +2243,6 @@ document.getElementById("btnDescargarTorre").addEventListener("click", () => {
   dibujarTorreElevacion();
   descargarCanvas("canvasTorre", `ESQUEMA_2_TORRE_${modelo}`);
 });
-
-const canvasTorreEl = document.getElementById("canvasTorre");
-if (canvasTorreEl && new URLSearchParams(window.location.search).get("calibrar") === "1") {
-  canvasTorreEl.addEventListener("click", (e) => {
-    const rect = canvasTorreEl.getBoundingClientRect();
-    const rx = ((e.clientX - rect.left) / rect.width).toFixed(3);
-    const ry = ((e.clientY - rect.top) / rect.height).toFixed(3);
-    alert(`Coordenada relativa en canvasTorre:\nxRatio: ${rx}, yRatio: ${ry}`);
-  });
-}
 
 restaurarEstadoLocal();
 renderizarTablaEquipos();
