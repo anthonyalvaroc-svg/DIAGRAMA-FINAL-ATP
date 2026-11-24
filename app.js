@@ -2093,15 +2093,16 @@ async function resolverUbicacionRuta(texto) {
     return { ...coords, nombreCorto: texto };
   }
   const url = `https://openstreetmap.org{encodeURIComponent(texto)}`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  if (Array.isArray(data) && data.length > 0) {
-    return {
-      lat: parseFloat(data.lat),
-      lon: parseFloat(data.lon),
-      nombreCorto: texto.toUpperCase()
-    };
-  }
+const resp = await fetch(url);
+const data = await resp.json();
+if (Array.isArray(data) && data.length > 0) {
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon),
+    nombreCorto: texto.toUpperCase()
+  };
+}
+
   return null;
 }
 
@@ -2169,8 +2170,12 @@ async function calcularYTrazarRuta() {
     }
 
     const routeUrl = `https://project-osrm.org{pOrigen.lon},${pOrigen.lat};${pDestino.lon},${pDestino.lat}?overview=full&geometries=geojson&steps=true`;
-    const rResp = await fetch(routeUrl);
-    const rData = await rResp.json();
+    // ...
+     const ruta = rData.routes[0];
+     const coordsLatLng = ruta.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+      const duracionMin = ruta.duration / 60;
+     const pasos = ruta.legs?.[0]?.steps || [];
+
 
     if (!rData.routes || !rData.routes.length) {
       setAviso("avisoRuta", "No se encontró una ruta vehicular entre ambos puntos.", "error");
@@ -2211,8 +2216,8 @@ async function calcularYTrazarRuta() {
     const bounds = capaRutaLinea.getBounds();
     mapaRuta.fitBounds(bounds, {
       paddingTopLeft:,
-      paddingBottomRight:
-    });
+     paddingBottomRight: [260, 30]
+     });
 
     const textoRuta = construirTextoNarrativoRuta(origenRaw, pDestino.nombreCorto, pasos, duracionMin);
     const txtArea = document.getElementById("rutaDetalleTexto");
