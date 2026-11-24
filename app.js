@@ -1884,23 +1884,27 @@ function capturarFirmaSitioActual() {
   const alturaTorre = parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30;
   const agrupar = document.getElementById("equiposAgrupar")?.value || "si";
 
-  const fotoRef = fotosPanoramicas || null;
+  const fotoRef = fotosPanoramicas.at(0) || null;
   const topY = fotoRef ? fotoRef.topY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.topY ?? 0.14);
   const bottomY = fotoRef ? fotoRef.bottomY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.bottomY ?? 0.86);
 
   const flechasAprendidas = fotoRef && Array.isArray(fotoRef.callouts)
-    ? fotoRef.callouts.map((c, idx) => ({
-        idx,
-        texto: c.texto,
-        prefijo: (c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i)?. || "EQ").toUpperCase(),
-        altura: c.altura,
-        alturaRelativa: alturaTorre > 0 ? Number((c.altura / alturaTorre).toFixed(4)) : 0.8,
-        lado: c.lado,
-        targetX: Number(c.targetX.toFixed(4)),
-        targetY: Number(c.targetY.toFixed(4)),
-        labelX: Number(c.labelX.toFixed(4)),
-        labelY: Number(c.labelY.toFixed(4))
-      }))
+    ? fotoRef.callouts.map((c, idx) => {
+        const matchPref = c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i);
+        const prefijo = (matchPref ? matchPref.at(1) : "EQ").toUpperCase();
+        return {
+          idx,
+          texto: c.texto,
+          prefijo,
+          altura: c.altura,
+          alturaRelativa: alturaTorre > 0 ? Number((c.altura / alturaTorre).toFixed(4)) : 0.8,
+          lado: c.lado,
+          targetX: Number(c.targetX.toFixed(4)),
+          targetY: Number(c.targetY.toFixed(4)),
+          labelX: Number(c.labelX.toFixed(4)),
+          labelY: Number(c.labelY.toFixed(4))
+        };
+      })
     : [];
 
   return {
@@ -1921,6 +1925,7 @@ function capturarFirmaSitioActual() {
     flechasAprendidas
   };
 }
+
 
 function aprenderSitioActual(silencioso = false) {
   const firma = capturarFirmaSitioActual();
@@ -1975,7 +1980,7 @@ function aplicarGeometriaAprendidaAFotos(registro, sobrescribirLista = false) {
     if (Array.isArray(registro.flechasAprendidas) && registro.flechasAprendidas.length > 0) {
       const usadas = new Set();
       foto.callouts.forEach((c) => {
-        const prefC = (c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i)?. || "EQ").toUpperCase();
+        const prefC = (c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i)?.[1] || "EQ").toUpperCase();
         const relH = alturaDestino > 0 ? (c.altura / alturaDestino) : 0.8;
         let mejorIdx = -1;
         let mejorScore = Infinity;
