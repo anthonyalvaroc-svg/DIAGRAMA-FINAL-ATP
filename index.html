@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</title>
+  <link rel="stylesheet" href="styles.css?v=7" />
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="header-row">
+        <div>
+          <h1>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos)</h1>
+          <p class="sub">Completa los datos técnicos y descarga los planos en formato PNG.</p>
+        </div>
+        <button type="button" id="btnResetTodo" class="btn-action btn-ghost" title="Restablecer valores por defecto">
+          Restablecer Datos
+        </button>
+      </div>
+    </header>
+
+    <!-- Barra superior compartida -->
+    <section class="shared-site-bar">
+      <div class="field shared-field">
+        <label for="sitio">CÓDIGO / NOMBRE DEL SITIO</label>
+        <input type="text" id="sitio" value="LI0123_SITIO" placeholder="Ej. LI0123_SITIO" />
+      </div>
+    </section>
+
+    <!-- Navegación por pestañas -->
+    <nav class="tabs" role="tablist" aria-label="Tipos de esquema técnico">
+      <button type="button" id="btn-tabSpat" class="tab-btn active" data-tab="tabSpat" role="tab" aria-selected="true" aria-controls="tabSpat" tabindex="0">
+        1. F12M - SPAT
+      </button>
+      <button type="button" id="btn-tabPerimetro" class="tab-btn" data-tab="tabPerimetro" role="tab" aria-selected="false" aria-controls="tabPerimetro" tabindex="-1">
+        2. Esquema 1 - Perímetro
+      </button>
+      <button type="button" id="btn-tabTorre" class="tab-btn" data-tab="tabTorre" role="tab" aria-selected="false" aria-controls="tabTorre" tabindex="-1">
+        3. Esquema 2 - Torre
+      </button>
+      <button type="button" id="btn-tabEquipos" class="tab-btn" data-tab="tabEquipos" role="tab" aria-selected="false" aria-controls="tabEquipos" tabindex="-1">
+        4. Esquema de Equipos en Torre
+      </button>
+    </nav>
+
+    <!-- PESTAÑA 1: F12M - SPAT -->
+    <section id="tabSpat" class="tab-panel active" role="tabpanel" aria-labelledby="btn-tabSpat">
+      <div class="grid-form">
+        <div class="field">
+          <label for="spatTipoTorre">Símbolo de Torre</label>
+          <select id="spatTipoTorre">
+            <option value="auto_cuadrado">Autosoportada (Cuadrada)</option>
+            <option value="auto_triangulo">Autosoportada (Triangular)</option>
+            <option value="monopolo">Monopolo / Árbol</option>
+            <option value="ventada">Ventada</option>
+            <option value="arriostrada">Arriostrada</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="cantidadPozos">Cantidad de Pozos (PT)</label>
+          <select id="cantidadPozos">
+            <option value="1">1 Pozo (PT01)</option>
+            <option value="2">2 Pozos (PT01 - PT02)</option>
+            <option value="3" selected>3 Pozos (PT01 - PT03)</option>
+            <option value="4">4 Pozos (PT01 - PT04)</option>
+            <option value="5">5 Pozos (PT01 - PT05)</option>
+            <option value="6">6 Pozos (PT01 - PT06)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="val50">Medición 50% - 15 MTS (OHMS)</label>
+          <input type="number" id="val50" step="0.01" min="0" value="2.15" />
+        </div>
+
+        <div class="field">
+          <label for="val60">Medición 60% - 18 MTS (OHMS)</label>
+          <input type="number" id="val60" step="0.01" min="0" value="2.20" />
+        </div>
+
+        <div class="field">
+          <label for="val70">Medición 70% - 21 MTS (OHMS)</label>
+          <input type="number" id="val70" step="0.01" min="0" value="2.28" />
+        </div>
+      </div>
+
+      <div id="avisoSpat" class="notice" hidden></div>
+
+      <div class="actions">
+        <button type="button" id="btnActualizarSpat" class="btn-action btn-secondary">Actualizar Vista</button>
+        <button type="button" id="btnDescargarSpat" class="btn-action btn-primary">Descargar PNG (SPAT)</button>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="canvasSpat" width="980" height="1060"></canvas>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 2: ESQUEMA 1 - PERÍMETRO -->
+    <section id="tabPerimetro" class="tab-panel" role="tabpanel" aria-labelledby="btn-tabPerimetro" hidden>
+      <div class="grid-form">
+        <div class="field">
+          <label for="perAncho">Ancho Horizontal (MTS)</label>
+          <input type="number" id="perAncho" step="0.01" min="0.1" value="8.10" />
+        </div>
+
+        <div class="field">
+          <label for="perLargo">Largo Vertical (MTS)</label>
+          <input type="number" id="perLargo" step="0.01" min="0.1" value="10.00" />
+        </div>
+
+        <div class="field">
+          <label for="perTipoTorre">Símbolo de Torre</label>
+          <select id="perTipoTorre">
+            <option value="auto_cuadrado">Autosoportada (Cuadrada)</option>
+            <option value="auto_triangulo">Autosoportada (Triangular)</option>
+            <option value="monopolo">Monopolo / Árbol</option>
+            <option value="ventada">Ventada</option>
+            <option value="arriostrada">Arriostrada</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="coordA">Coordenada A (Sup. Izq.)</label>
+          <input type="text" id="coordA" value="-11.864512, -77.076543" />
+        </div>
+
+        <div class="field">
+          <label for="coordB">Coordenada B (Sup. Der.)</label>
+          <input type="text" id="coordB" value="-11.864510, -77.076470" />
+        </div>
+
+        <div class="field">
+          <label for="coordC">Coordenada C (Inf. Der.)</label>
+          <input type="text" id="coordC" value="-11.864598, -77.076468" />
+        </div>
+
+        <div class="field">
+          <label for="coordD">Coordenada D (Inf. Izq.)</label>
+          <input type="text" id="coordD" value="-11.864600, -77.076541" />
+        </div>
+      </div>
+
+      <div id="avisoPerimetro" class="notice" hidden></div>
+
+      <div class="actions">
+        <button type="button" id="btnActualizarPer" class="btn-action btn-secondary">Actualizar Vista</button>
+        <button type="button" id="btnDescargarPer" class="btn-action btn-primary">Descargar PNG (Perímetro)</button>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="canvasPerimetro" width="960" height="820"></canvas>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 3: ESQUEMA 2 - TORRE -->
+    <section id="tabTorre" class="tab-panel" role="tabpanel" aria-labelledby="btn-tabTorre" hidden>
+      <div class="grid-form">
+        <div class="field">
+          <label for="torreTipo">Modelo de Torre (8 tipos)</label>
+          <select id="torreTipo">
+            <option value="arbol">1. Torre público tipo árbol</option>
+            <option value="monopolo">2. Torre monopolo</option>
+            <option value="autosoportada_normal">3. Torre autosoportada (roldana normal)</option>
+            <option value="arriostrada_escalera_gato">4. Torre arriostrada con escalera gato</option>
+            <option value="ventada_edificio">5. Torre ventada con edificio</option>
+            <option value="ventada_piso">6. Torre ventada de piso</option>
+            <option value="autosoportada_encima">7. Torre autosoportada (roldana encima)</option>
+            <option value="arriostrada_edificio_normal">8. Torre arriostrada con edificio normal</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="alturaTorre">Altura Torre + Base / Pedestal (m)</label>
+          <input type="number" id="alturaTorre" step="0.01" min="0.1" value="30.00" />
+        </div>
+
+        <div class="field">
+          <label for="alturaBase">Altura Base / Pedestal (m)</label>
+          <input type="number" id="alturaBase" step="0.01" min="0" value="1.20" />
+        </div>
+
+        <div class="field grp-roldana-std" hidden>
+          <label for="roldanaSup">Altura Roldana Superior (m)</label>
+          <input type="number" id="roldanaSup" step="0.01" min="0" value="28.50" />
+        </div>
+
+        <div class="field grp-roldana-std" hidden>
+          <label for="roldanaInf">Altura Roldana Inferior (m)</label>
+          <input type="number" id="roldanaInf" step="0.01" min="0" value="27.30" />
+        </div>
+
+        <div class="field grp-monopolo" hidden>
+          <label for="rol1Sup">Altura Roldana 1 Superior (m)</label>
+          <input type="number" id="rol1Sup" step="0.01" min="0" value="29.00" />
+        </div>
+        <div class="field grp-monopolo" hidden>
+          <label for="rol1Inf">Altura Roldana 1 Inferior (m)</label>
+          <input type="number" id="rol1Inf" step="0.01" min="0" value="27.80" />
+        </div>
+        <div class="field grp-monopolo" hidden>
+          <label for="rol2Sup">Altura Roldana 2 Superior (m)</label>
+          <input type="number" id="rol2Sup" step="0.01" min="0" value="26.00" />
+        </div>
+        <div class="field grp-monopolo" hidden>
+          <label for="rol2Inf">Altura Roldana 2 Inferior (m)</label>
+          <input type="number" id="rol2Inf" step="0.01" min="0" value="24.80" />
+        </div>
+        <div class="field grp-monopolo" hidden>
+          <label for="rol3Sup">Altura Roldana 3 Superior (m)</label>
+          <input type="number" id="rol3Sup" step="0.01" min="0" value="23.00" />
+        </div>
+        <div class="field grp-monopolo" hidden>
+          <label for="rol3Inf">Altura Roldana 3 Inferior (m)</label>
+          <input type="number" id="rol3Inf" step="0.01" min="0" value="21.80" />
+        </div>
+
+        <div class="field grp-escalera" hidden>
+          <label for="alturaEscaleraGato">Altura Escalera Gato (m)</label>
+          <input type="number" id="alturaEscaleraGato" step="0.01" min="0" value="2.40" />
+        </div>
+
+        <div class="field grp-edificio" hidden>
+          <label for="alturaEdificio">Altura Edificio sin Parapeto (m)</label>
+          <input type="number" id="alturaEdificio" step="0.01" min="0" value="12.00" />
+        </div>
+
+        <div class="field">
+          <label for="customTorreImg">Imagen base de este modelo (opcional)</label>
+          <input type="file" id="customTorreImg" accept="image/*" />
+        </div>
+      </div>
+
+      <div id="avisoTorre" class="notice" hidden></div>
+
+      <div class="actions">
+        <button type="button" id="btnActualizarTorre" class="btn-action btn-secondary">Actualizar Vista</button>
+        <button type="button" id="btnDescargarTorre" class="btn-action btn-primary">Descargar PNG (Torre)</button>
+        <button type="button" id="btnRestaurarImgTorre" class="btn-action btn-ghost" hidden>Restaurar Imagen Original</button>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="canvasTorre" width="900" height="1200"></canvas>
+      </div>
+    </section>
+
+    <!-- PESTAÑA 4: ESQUEMA DE EQUIPOS EN TORRE -->
+    <section id="tabEquipos" class="tab-panel" role="tabpanel" aria-labelledby="btn-tabEquipos" hidden>
+      <div class="grid-form">
+        <div class="field">
+          <label for="equiposFotos">1. Subir Fotos Panorámicas (1 a 4 fotos)</label>
+          <input type="file" id="equiposFotos" accept="image/*" multiple />
+        </div>
+
+        <div class="field">
+          <label for="equiposAlturaRef">Altura Máxima Torre (m) - Referencia</label>
+          <input type="number" id="equiposAlturaRef" step="0.01" min="1" value="30.00" />
+        </div>
+
+        <div class="field">
+          <label for="equiposAgrupar">Agrupar equipos a misma altura</label>
+          <select id="equiposAgrupar">
+            <option value="si" selected>Sí (Ej. RRU 12-13-14 a 25.0 m)</option>
+            <option value="no">No (Flecha individual por equipo)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="equiposFontSize">Tamaño de Etiqueta Roja</label>
+          <select id="equiposFontSize">
+            <option value="16">Pequeño (16 px)</option>
+            <option value="20" selected>Normal (20 px)</option>
+            <option value="24">Grande (24 px)</option>
+            <option value="28">Extra Grande (28 px)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Lista de Equipos según su altura -->
+      <div class="equipos-box">
+        <div class="equipos-box-header">
+          <div>
+            <strong>2. Lista de Equipos según su Altura</strong>
+            <span class="hint-inline">Se ordenan automáticamente de mayor a menor altura y se proyectan con flechas rojas sobre cada foto.</span>
+          </div>
+          <div class="equipos-quick-actions">
+            <button type="button" id="btnPegarListaEquipos" class="btn-action btn-ghost">Pegar desde Excel / Lista</button>
+            <button type="button" id="btnAgregarEquipo" class="btn-action btn-secondary">+ Agregar Equipo</button>
+          </div>
+        </div>
+
+        <!-- Panel desplegable para pegado masivo -->
+        <div id="panelPegarEquipos" class="paste-panel" hidden>
+          <label for="txtPegarEquipos">Pega aquí líneas con formato: <code>ETIQUETA | ALTURA(m) | LADO (IZQ/DER, opcional)</code> — Ejemplo: <code>RF 1	28.5	DER</code></label>
+          <textarea id="txtPegarEquipos" rows="5" placeholder="RF 1	28.50	DER&#10;RRU 2	28.20	DER&#10;MW 4	29.10	IZQ&#10;GPS 10	15.00	IZQ"></textarea>
+          <div class="actions" style="margin-top:8px; margin-bottom:0;">
+            <button type="button" id="btnProcesarPegadoEquipos" class="btn-action btn-primary">Importar Lista</button>
+            <button type="button" id="btnCerrarPegadoEquipos" class="btn-action btn-ghost">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="equipos-table" id="tablaEquipos">
+            <thead>
+              <tr>
+                <th style="width: 34%;">Equipo / Código (Ej. RF 1, RRU 2, MW 4, GPS 10)</th>
+                <th style="width: 22%;">Altura (m)</th>
+                <th style="width: 24%;">Lado de Etiqueta</th>
+                <th style="width: 20%;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyEquipos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="avisoEquipos" class="notice" hidden></div>
+
+      <div class="actions">
+        <button type="button" id="btnAutoDistribuirEquipos" class="btn-action btn-secondary">Recalcular Flechas Automáticas</button>
+        <button type="button" id="btnDescargarTodasFotos" class="btn-action btn-primary">Descargar Todas las Fotos PNG</button>
+        <button type="button" id="btnLimpiarFotosEquipos" class="btn-action btn-ghost">Quitar Fotos</button>
+      </div>
+
+      <p class="drag-tip">
+        <strong>Ajuste fino interactivo:</strong> Arrastra el <strong>texto rojo</strong> para mover la etiqueta o arrastra el <strong>punto rojo</strong> sobre la torre para apuntar exactamente a la antena/RRU en cada foto.
+      </p>
+
+      <div id="galeriaEquipos" class="galeria-equipos">
+        <div class="empty-photos-msg">
+          Sube de 1 a 4 fotos panorámicas de la torre para generar automáticamente las flechas rojas y etiquetas según la lista de alturas.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js?v=7"></script>
+</body>
+</html>
