@@ -2981,8 +2981,32 @@ document.getElementById("btnResetTodo")?.addEventListener("click", () => {
   } catch (_) {}
   location.reload();
 });
+
+// =========================================================
+// AUTOLLENADO POR DEFECTO DE COORDENADAS EN GMS (PERÍMETRO)
+// =========================================================
+function asegurarCoordenadasPorDefectoGMS() {
+  const selFormato = document.getElementById("perFormatoCoord");
+  if (selFormato) selFormato.value = "gms";
+
+  const coordsBase = {
+    coordA: `11°51'52.24"S 77°04'35.55"W`,
+    coordB: `11°51'52.24"S 77°04'35.20"W`,
+    coordC: `11°51'52.60"S 77°04'35.20"W`,
+    coordD: `11°51'52.60"S 77°04'35.55"W`
+  };
+
+  Object.entries(coordsBase).forEach(([id, valorGMS]) => {
+    const inp = document.getElementById(id);
+    if (inp && !inp.value.trim()) {
+      inp.value = valorGMS;
+    }
+  });
+}
+
 // Inicialización ordenada
 restaurarEstadoLocal();
+asegurarCoordenadasPorDefectoGMS();
 actualizarCamposTorre();
 actualizarUIPlantillasAprendidas();
 renderizarTablaEquipos();
@@ -3013,29 +3037,38 @@ dibujarTodo();
 })();
 
 // =========================================================
-// AJUSTE DE TAMAÑO Y ESTILO DEL TÍTULO PRINCIPAL
+// AJUSTE DE FUENTE Y ESTILO DEL TÍTULO PRINCIPAL
 // =========================================================
 (function estilizarTituloPrincipal() {
   const titulo = document.querySelector("h1");
   if (!titulo) return;
-  titulo.style.fontSize = "34px";
-  titulo.style.fontWeight = "800";
-  titulo.style.letterSpacing = "-0.02em";
+  titulo.style.fontFamily = "'Segoe UI', 'Montserrat', 'Roboto', Arial, sans-serif";
+  titulo.style.fontSize = "36px";
+  titulo.style.fontWeight = "900";
+  titulo.style.letterSpacing = "0.03em";
+  titulo.style.textTransform = "uppercase";
   titulo.style.marginBottom = "6px";
 })();
 
 // =========================================================
-// BOTÓN DE MODO OSCURO / MODO CLARO (CON MEMORIA)
+// BOTÓN DE MODO OSCURO / MODO CLARO (TEXTO 100% VISIBLE)
 // =========================================================
 (function agregarBotonModoOscuro() {
   const btnReset = document.getElementById("btnResetTodo");
   if (!btnReset || !btnReset.parentElement) return;
 
+  document.querySelectorAll('.tab-btn[data-tab="tabPanoramica"], .tab-btn[data-tab="tabTablero"]').forEach((el) => {
+    el.style.display = "none";
+  });
+
   const style = document.createElement("style");
   style.textContent = `
+    body.dark-mode,
+    body.dark-mode *:not(canvas):not(.btn-action):not(.btn-danger-sm):not(.aviso-box) {
+      color: #ffffff !important;
+    }
     body.dark-mode {
       background-color: #090d16 !important;
-      color: #f8fafc !important;
     }
     body.dark-mode .container,
     body.dark-mode .main-card,
@@ -3043,45 +3076,32 @@ dibujarTodo();
     body.dark-mode .panel,
     body.dark-mode .tab-panel,
     body.dark-mode .foto-card,
-    body.dark-mode header {
+    body.dark-mode header,
+    body.dark-mode section,
+    body.dark-mode div {
       background-color: #111827 !important;
-      color: #f8fafc !important;
       border-color: #1f2937 !important;
-    }
-    body.dark-mode h1,
-    body.dark-mode h2,
-    body.dark-mode h3,
-    body.dark-mode h4,
-    body.dark-mode label,
-    body.dark-mode span,
-    body.dark-mode p,
-    body.dark-mode strong {
-      color: #f8fafc !important;
     }
     body.dark-mode input,
     body.dark-mode select,
     body.dark-mode textarea {
       background-color: #1e293b !important;
       color: #ffffff !important;
-      border-color: #334155 !important;
+      border-color: #475569 !important;
     }
     body.dark-mode .tab-btn {
       background-color: #1e293b !important;
-      color: #cbd5e1 !important;
+      color: #e2e8f0 !important;
       border-color: #334155 !important;
     }
     body.dark-mode .tab-btn.active {
       background-color: #2563eb !important;
       color: #ffffff !important;
-      border-color: #3b82f6 !important;
     }
     body.dark-mode .btn-ghost {
       background-color: #1e293b !important;
-      color: #f1f5f9 !important;
+      color: #ffffff !important;
       border-color: #475569 !important;
-    }
-    body.dark-mode .btn-ghost:hover {
-      background-color: #334155 !important;
     }
     body.dark-mode canvas {
       background-color: #ffffff !important;
@@ -3104,16 +3124,15 @@ dibujarTodo();
   };
 
   btnDark.addEventListener("click", () => {
-    const activo = document.body.classList.contains("dark-mode");
-    aplicarTema(!activo);
+    aplicarTema(!document.body.classList.contains("dark-mode"));
   });
 
   btnReset.parentElement.appendChild(btnDark);
 
   try {
-    const guardado = localStorage.getItem("esquemas_tecnicos_dark_mode") === "1";
-    aplicarTema(guardado);
+    aplicarTema(localStorage.getItem("esquemas_tecnicos_dark_mode") === "1");
   } catch (_) {
     aplicarTema(false);
   }
 })();
+
