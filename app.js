@@ -1,4 +1,4 @@
-const FONT_SIZE_RELLENO = 16;
+﻿ const FONT_SIZE_RELLENO = 16;
 const STORAGE_KEY = "esquemas_tecnicos_estado_v4";
 const USER_TEMPLATE_KEY = "esquemas_tecnicos_plantilla_usuario_v1";
 const KNOWLEDGE_DB_KEY = "esquemas_tecnicos_cerebro_sitios_v1";
@@ -666,7 +666,7 @@ const MODELOS_TORRE = {
   arbol: {
     nombre: "Torre público tipo árbol",
     src: "img/1_torre_arbol.png",
-    sitioPos: { xRatio: 0.74, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.94, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.052, yRatio: 0.485, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.892, yRatio: 0.928, size: 22 }
@@ -675,7 +675,7 @@ const MODELOS_TORRE = {
   monopolo: {
     nombre: "Torre monopolo (3 roldanas)",
     src: "img/2_torre_monopolo.png",
-    sitioPos: { xRatio: 0.14, yRatio: 0.15 },
+    sitioPos: { xRatio: 0.08, yRatio: 0.15 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.062, yRatio: 0.450, size: 23 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.785, yRatio: 0.956, size: 21 },
@@ -690,7 +690,7 @@ const MODELOS_TORRE = {
   autosoportada_normal: {
     nombre: "Torre autosoportada (roldana normal)",
     src: "img/3_torre_autosoportada_normal.png",
-    sitioPos: { xRatio: 0.15, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.10, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.042, yRatio: 0.618, size: 22 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.654, yRatio: 0.658, size: 18 },
@@ -731,7 +731,7 @@ const MODELOS_TORRE = {
   autosoportada_encima: {
     nombre: "Torre autosoportada (roldana encima)",
     src: "img/7_torre_autosoportada_encima.png",
-    sitioPos: { xRatio: 0.16, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.08, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.044, yRatio: 0.588, size: 18 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.662, yRatio: 0.602, size: 18 },
@@ -752,7 +752,7 @@ const MODELOS_TORRE = {
   autosoportada_sin_roldana: {
     nombre: "Torre autosoportada sin roldana",
     src: "img/9_torre_autosoportada_sin_roldana.png",
-    sitioPos: { xRatio: 0.16, yRatio: 0.12 },
+    sitioPos: { xRatio: 0.09, yRatio: 0.12 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.610, yRatio: 0.530, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.445, yRatio: 0.965, size: 20 }
@@ -761,7 +761,7 @@ const MODELOS_TORRE = {
   estructura_especial: {
     nombre: "Torre estructura especial",
     src: "img/10_torre_estructura_especial.png",
-    sitioPos: { xRatio: 0.25, yRatio: 0.09 },
+    sitioPos: { xRatio: 0.09, yRatio: 0.14 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`,    xRatio: 0.770, yRatio: 0.215, size: 22 },
       { texto: `${v.alturaBase} m`,     xRatio: 0.590, yRatio: 0.382, size: 19 },
@@ -772,7 +772,7 @@ const MODELOS_TORRE = {
   autosoportada_rooftop: {
     nombre: "Torre autosoportada rooftop",
     src: "img/11_torre_autosoportada_rooftop.png",
-    sitioPos: { xRatio: 0.26, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.08, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`,    xRatio: 0.555, yRatio: 0.215, size: 22 },
       { texto: `${v.alturaBase} m`,     xRatio: 0.065, yRatio: 0.390, size: 19 },
@@ -783,7 +783,7 @@ const MODELOS_TORRE = {
   monopolo_1_roldana: {
     nombre: "Torre monopolo 1 roldana",
     src: "img/12_torre_monopolo_1_roldana.png",
-    sitioPos: { xRatio: 0.25, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.635, yRatio: 0.090, size: 17 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.635, yRatio: 0.145, size: 17 },
@@ -794,7 +794,7 @@ const MODELOS_TORRE = {
   monopolo_2_roldanas: {
     nombre: "Torre monopolo 2 roldanas",
     src: "img/13_torre_monopolo_2_roldanas.png",
-    sitioPos: { xRatio: 0.25, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.rol1Sup} m`,     xRatio: 0.635, yRatio: 0.090, size: 16 },
       { texto: `${v.rol1Inf} m`,     xRatio: 0.635, yRatio: 0.145, size: 16 },
@@ -807,7 +807,7 @@ const MODELOS_TORRE = {
   monoposte: {
     nombre: "Torre monoposte",
     src: "img/14_torre_monoposte.png",
-    sitioPos: { xRatio: 0.22, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.05, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.060, yRatio: 0.415, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.680, yRatio: 0.940, size: 21 }
@@ -2988,3 +2988,202 @@ actualizarCamposTorre();
 actualizarUIPlantillasAprendidas();
 renderizarTablaEquipos();
 dibujarTodo();
+
+// Inyección automática de botones externos en la barra superior
+(function agregarBotonesExternos() {
+  const btnReset = document.getElementById("btnResetTodo");
+  if (!btnReset || !btnReset.parentElement) return;
+
+  const enlaces = [
+    { texto: "🌐 Panorámico 360°", url: "https://anthonyalvaroc-svg.github.io/PANORAMICO360/" },
+    { texto: "⚡ Diagrama Tablero", url: "https://anthonyalvaroc-svg.github.io/DIAGRAMA-TABLERO-V2/" }
+  ];
+
+  enlaces.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-action btn-primary";
+    btn.textContent = item.texto;
+    btn.addEventListener("click", () => {
+      window.open(item.url, "_blank", "noopener,noreferrer");
+    });
+    btnReset.parentElement.appendChild(btn);
+  });
+})();
+// =========================================================
+// INYECCIÓN AUTOMÁTICA DE PESTAÑAS 6 Y 7 (PANORÁMICA Y TABLERO)
+// =========================================================
+(function crearPestanasExternas() {
+  const btnRuta = document.querySelector('.tab-btn[data-tab="tabRuta"]');
+  const panelRuta = document.getElementById("tabRuta");
+
+  if (!btnRuta || !panelRuta || document.getElementById("tabPanoramica")) return;
+
+  const extras = [
+    {
+      id: "tabPanoramica",
+      tituloTab: "6. Panorámica 360°",
+      tituloPanel: "Generador Panorámico y Diagrama 360°",
+      url: "https://github.io"
+    },
+    {
+      id: "tabTablero",
+      tituloTab: "7. Diagrama Tablero",
+      tituloPanel: "Diagrama Unifilar de Tablero Eléctrico",
+      url: "https://github.io"
+    }
+  ];
+
+  let ultimoBtn = btnRuta;
+  let ultimoPanel = panelRuta;
+
+  extras.forEach((item) => {
+    // 1. Crear botón en la barra de pestañas
+    const nuevoBtn = document.createElement("button");
+    nuevoBtn.type = "button";
+    nuevoBtn.className = "tab-btn";
+    nuevoBtn.setAttribute("data-tab", item.id);
+    nuevoBtn.setAttribute("role", "tab");
+    nuevoBtn.setAttribute("aria-selected", "false");
+    nuevoBtn.setAttribute("tabindex", "-1");
+    nuevoBtn.textContent = item.tituloTab;
+
+    nuevoBtn.addEventListener("click", () => {
+      activarTab(item.id, nuevoBtn);
+    });
+
+    ultimoBtn.insertAdjacentElement("afterend", nuevoBtn);
+    ultimoBtn = nuevoBtn;
+
+    // 2. Crear panel con iframe
+    const nuevoPanel = document.createElement("div");
+    nuevoPanel.id = item.id;
+    nuevoPanel.className = "tab-panel";
+    nuevoPanel.setAttribute("role", "tabpanel");
+    nuevoPanel.hidden = true;
+
+    nuevoPanel.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0; font-size: 16px; color: #0f172a;">${item.tituloPanel}</h3>
+        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-action btn-ghost" style="text-decoration: none; padding: 6px 12px; font-size: 12px;">
+          ↗ Abrir en ventana completa
+        </a>
+      </div>
+      <iframe src="${item.url}" style="width: 100%; height: 82vh; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff;" loading="lazy"></iframe>
+    `;
+
+    ultimoPanel.insertAdjacentElement("afterend", nuevoPanel);
+    ultimoPanel = nuevoPanel;
+  });
+})();
+// =========================================================
+// AJUSTE DE TAMAÑO Y ESTILO DEL TÍTULO PRINCIPAL
+// =========================================================
+(function estilizarTituloPrincipal() {
+  const titulo = document.querySelector("h1");
+  if (!titulo) return;
+  titulo.style.fontSize = "34px";
+  titulo.style.fontWeight = "800";
+  titulo.style.letterSpacing = "-0.02em";
+  titulo.style.color = "#0f172a";
+  titulo.style.marginBottom = "6px";
+})();
+// =========================================================
+// BOTÓN DE MODO OSCURO / MODO CLARO (CON MEMORIA)
+// =========================================================
+(function agregarBotonModoOscuro() {
+  const btnReset = document.getElementById("btnResetTodo");
+  if (!btnReset || !btnReset.parentElement) return;
+
+  // 1. Inyectar estilos del Modo Oscuro
+  const style = document.createElement("style");
+  style.textContent = `
+    body.dark-mode {
+      background-color: #090d16 !important;
+      color: #f8fafc !important;
+    }
+    body.dark-mode .container,
+    body.dark-mode .main-card,
+    body.dark-mode .card,
+    body.dark-mode .panel,
+    body.dark-mode .tab-panel,
+    body.dark-mode .foto-card,
+    body.dark-mode header {
+      background-color: #111827 !important;
+      color: #f8fafc !important;
+      border-color: #1f2937 !important;
+    }
+    body.dark-mode h1,
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode h4,
+    body.dark-mode label,
+    body.dark-mode span,
+    body.dark-mode p,
+    body.dark-mode strong {
+      color: #f8fafc !important;
+    }
+    body.dark-mode input,
+    body.dark-mode select,
+    body.dark-mode textarea {
+      background-color: #1e293b !important;
+      color: #ffffff !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode .tab-btn {
+      background-color: #1e293b !important;
+      color: #cbd5e1 !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode .tab-btn.active {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+    }
+    body.dark-mode .btn-ghost {
+      background-color: #1e293b !important;
+      color: #f1f5f9 !important;
+      border-color: #475569 !important;
+    }
+    body.dark-mode .btn-ghost:hover {
+      background-color: #334155 !important;
+    }
+    /* Mantener los planos técnicos (canvas) con fondo blanco al exportar */
+    body.dark-mode canvas {
+      background-color: #ffffff !important;
+      border: 2px solid #334155 !important;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // 2. Crear el botón en la barra superior
+  const btnDark = document.createElement("button");
+  btnDark.type = "button";
+  btnDark.id = "btnToggleDarkMode";
+  btnDark.className = "btn-action btn-ghost";
+
+  const aplicarTema = (esOscuro) => {
+    document.body.classList.toggle("dark-mode", esOscuro);
+    btnDark.textContent = esOscuro ? "☀️ Modo Claro" : "🌙 Modo Oscuro";
+    try {
+      localStorage.setItem("esquemas_tecnicos_dark_mode", esOscuro ? "1" : "0");
+    } catch (_) {}
+  };
+
+  btnDark.addEventListener("click", () => {
+    const activo = document.body.classList.contains("dark-mode");
+    aplicarTema(!activo);
+  });
+
+  btnReset.parentElement.appendChild(btnDark);
+
+  // 3. Restaurar estado guardado al recargar
+  try {
+    const guardado = localStorage.getItem("esquemas_tecnicos_dark_mode") === "1";
+    aplicarTema(guardado);
+  } catch (_) {
+    aplicarTema(false);
+  }
+})();
+
+
