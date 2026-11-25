@@ -2995,8 +2995,8 @@ dibujarTodo();
   if (!btnReset || !btnReset.parentElement) return;
 
   const enlaces = [
-    { texto: "🌐 Panorámico 360°", url: "https://github.io" },
-    { texto: "⚡ Diagrama Tablero", url: "https://github.io" }
+    { texto: "🌐 Panorámico 360°", url: "https://anthonyalvaroc-svg.github.io/PANORAMICO360/" },
+    { texto: "⚡ Diagrama Tablero", url: "https://anthonyalvaroc-svg.github.io/DIAGRAMA-TABLERO-V2/" }
   ];
 
   enlaces.forEach((item) => {
