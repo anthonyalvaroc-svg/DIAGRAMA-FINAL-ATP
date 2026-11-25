@@ -2981,7 +2981,6 @@ document.getElementById("btnResetTodo")?.addEventListener("click", () => {
   } catch (_) {}
   location.reload();
 });
-
 // Inicialización ordenada
 restaurarEstadoLocal();
 actualizarCamposTorre();
@@ -2989,7 +2988,9 @@ actualizarUIPlantillasAprendidas();
 renderizarTablaEquipos();
 dibujarTodo();
 
-// Inyección automática de botones externos en la barra superior
+// =========================================================
+// BOTONES EXTERNOS EN LA BARRA SUPERIOR
+// =========================================================
 (function agregarBotonesExternos() {
   const btnReset = document.getElementById("btnResetTodo");
   if (!btnReset || !btnReset.parentElement) return;
@@ -3010,72 +3011,7 @@ dibujarTodo();
     btnReset.parentElement.appendChild(btn);
   });
 })();
-// =========================================================
-// INYECCIÓN AUTOMÁTICA DE PESTAÑAS 6 Y 7 (PANORÁMICA Y TABLERO)
-// =========================================================
-(function crearPestanasExternas() {
-  const btnRuta = document.querySelector('.tab-btn[data-tab="tabRuta"]');
-  const panelRuta = document.getElementById("tabRuta");
 
-  if (!btnRuta || !panelRuta || document.getElementById("tabPanoramica")) return;
-
-  const extras = [
-    {
-      id: "tabPanoramica",
-      tituloTab: "6. Panorámica 360°",
-      tituloPanel: "Generador Panorámico y Diagrama 360°",
-      url: "https://github.io"
-    },
-    {
-      id: "tabTablero",
-      tituloTab: "7. Diagrama Tablero",
-      tituloPanel: "Diagrama Unifilar de Tablero Eléctrico",
-      url: "https://github.io"
-    }
-  ];
-
-  let ultimoBtn = btnRuta;
-  let ultimoPanel = panelRuta;
-
-  extras.forEach((item) => {
-    // 1. Crear botón en la barra de pestañas
-    const nuevoBtn = document.createElement("button");
-    nuevoBtn.type = "button";
-    nuevoBtn.className = "tab-btn";
-    nuevoBtn.setAttribute("data-tab", item.id);
-    nuevoBtn.setAttribute("role", "tab");
-    nuevoBtn.setAttribute("aria-selected", "false");
-    nuevoBtn.setAttribute("tabindex", "-1");
-    nuevoBtn.textContent = item.tituloTab;
-
-    nuevoBtn.addEventListener("click", () => {
-      activarTab(item.id, nuevoBtn);
-    });
-
-    ultimoBtn.insertAdjacentElement("afterend", nuevoBtn);
-    ultimoBtn = nuevoBtn;
-
-    // 2. Crear panel con iframe
-    const nuevoPanel = document.createElement("div");
-    nuevoPanel.id = item.id;
-    nuevoPanel.className = "tab-panel";
-    nuevoPanel.setAttribute("role", "tabpanel");
-    nuevoPanel.hidden = true;
-
-    nuevoPanel.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0; font-size: 16px; color: #0f172a;">${item.tituloPanel}</h3>
-        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="btn-action btn-ghost" style="text-decoration: none; padding: 6px 12px; font-size: 12px;">
-          ↗ Abrir en ventana completa
-        </a>
-      </div>
-      <iframe src="${item.url}" style="width: 100%; height: 82vh; border: 1px solid #cbd5e1; border-radius: 10px; background: #ffffff;" loading="lazy"></iframe>
-    `;
-
-    ultimoPanel.insertAdjacentElement("afterend", nuevoPanel);
-    ultimoPanel = nuevoPanel;
-  });
-})();
 // =========================================================
 // AJUSTE DE TAMAÑO Y ESTILO DEL TÍTULO PRINCIPAL
 // =========================================================
@@ -3085,9 +3021,9 @@ dibujarTodo();
   titulo.style.fontSize = "34px";
   titulo.style.fontWeight = "800";
   titulo.style.letterSpacing = "-0.02em";
-  titulo.style.color = "#0f172a";
   titulo.style.marginBottom = "6px";
 })();
+
 // =========================================================
 // BOTÓN DE MODO OSCURO / MODO CLARO (CON MEMORIA)
 // =========================================================
@@ -3095,7 +3031,6 @@ dibujarTodo();
   const btnReset = document.getElementById("btnResetTodo");
   if (!btnReset || !btnReset.parentElement) return;
 
-  // 1. Inyectar estilos del Modo Oscuro
   const style = document.createElement("style");
   style.textContent = `
     body.dark-mode {
@@ -3148,7 +3083,6 @@ dibujarTodo();
     body.dark-mode .btn-ghost:hover {
       background-color: #334155 !important;
     }
-    /* Mantener los planos técnicos (canvas) con fondo blanco al exportar */
     body.dark-mode canvas {
       background-color: #ffffff !important;
       border: 2px solid #334155 !important;
@@ -3156,7 +3090,6 @@ dibujarTodo();
   `;
   document.head.appendChild(style);
 
-  // 2. Crear el botón en la barra superior
   const btnDark = document.createElement("button");
   btnDark.type = "button";
   btnDark.id = "btnToggleDarkMode";
@@ -3177,7 +3110,6 @@ dibujarTodo();
 
   btnReset.parentElement.appendChild(btnDark);
 
-  // 3. Restaurar estado guardado al recargar
   try {
     const guardado = localStorage.getItem("esquemas_tecnicos_dark_mode") === "1";
     aplicarTema(guardado);
@@ -3185,5 +3117,3 @@ dibujarTodo();
     aplicarTema(false);
   }
 })();
-
-
