@@ -1,4 +1,4 @@
-﻿* {
+* {
   box-sizing: border-box;
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -313,6 +313,7 @@ canvas {
   background: #ffffff;
   border: 1px solid #f1f5f9;
 }
+
 /* =========================================================
    PESTAÑA 4: LISTA COMPACTA RESPONSIVE (MÓVIL + PC)
    ========================================================= */

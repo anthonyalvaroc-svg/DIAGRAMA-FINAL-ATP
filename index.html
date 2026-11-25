@@ -1,11 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Generador de Esquemas Técnicos (SPAT / Perímetro / Torre / Equipos / Ruta)</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://unpkg.com" crossorigin="" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
 </head>
 <body>
   <div class="container">
@@ -200,7 +204,8 @@
             <option value="arriostrada_escalera_gato">4. Torre arriostrada con escalera gato</option>
             <option value="ventada_edificio">5. Torre ventada con edificio</option>
             <option value="ventada_piso">6. Torre ventada de piso</option>
-            <option value="autosoportada_encima">7. Torre autosoportada (roldana encima)</option>            <option value="arriostrada_edificio_normal">8. Torre arriostrada con edificio normal</option>
+            <option value="autosoportada_encima">7. Torre autosoportada (roldana encima)</option>
+            <option value="arriostrada_edificio_normal">8. Torre arriostrada con edificio normal</option>
             <option value="autosoportada_sin_roldana">9. Torre autosoportada sin roldana</option>
             <option value="estructura_especial">10. Torre estructura especial</option>
             <option value="autosoportada_rooftop">11. Torre autosoportada rooftop</option>
@@ -275,6 +280,7 @@
         <canvas id="canvasTorre" width="900" height="1120"></canvas>
       </div>
     </section>
+
     <!-- PESTAÑA 4: ESQUEMA DE EQUIPOS EN TORRE -->
     <section id="tabEquipos" class="tab-panel" role="tabpanel" hidden>
       <div class="grid-form">
@@ -432,6 +438,7 @@ RRU 1	27.80	IZQ"></textarea>
         </div>
       </div>
     </section>
+
     <!-- PESTAÑA 5: DIAGRAMA RUTA AL SITIO -->
     <section id="tabRuta" class="tab-panel" role="tabpanel" hidden>
       <div class="grid-form">
@@ -478,11 +485,10 @@ RRU 1	27.80	IZQ"></textarea>
     </section>
   </div>
 
-  <script src="https://jsdelivr.net" defer></script>
-  <script src="https://jsdelivr.net" defer></script>
-  <script src="https://unpkg.com" crossorigin="" defer></script>
-  <script src="https://jsdelivr.net" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
-

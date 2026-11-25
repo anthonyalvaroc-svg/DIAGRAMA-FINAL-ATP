@@ -1,5 +1,7 @@
 ﻿const FONT_SIZE_RELLENO = 16;
 const STORAGE_KEY = "esquemas_tecnicos_estado_v4";
+const USER_TEMPLATE_KEY = "esquemas_tecnicos_plantilla_usuario_v1";
+const KNOWLEDGE_DB_KEY = "esquemas_tecnicos_cerebro_sitios_v1";
 
 function setFuenteRelleno(ctx, color = "#111827", align = "center", baseline = "middle", size = FONT_SIZE_RELLENO) {
   ctx.fillStyle = color;
@@ -111,7 +113,6 @@ function parsearCoordenadaUniversal(raw) {
   if (!raw) return null;
   const clean = raw.trim();
 
-  // 1. Formato decimal: -11.864512, -77.076543
   const decMatch = clean.match(/^(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)$/);
   if (decMatch) {
     return {
@@ -120,7 +121,6 @@ function parsearCoordenadaUniversal(raw) {
     };
   }
 
-  // 2. Formato Grados Minutos Segundos (GMS): 11°51'52.24"S 77°04'35.55"W
   const dmsRegex = /(\d{1,3})[°º]\s*(\d{1,2})['’]\s*(\d{1,2}(?:[.,]\d+)?)["”]?\s*([NSns])\s*[,;\s]*(\d{1,3})[°º]\s*(\d{1,2})['’]\s*(\d{1,2}(?:[.,]\d+)?)["”]?\s*([WOEwoe])/;
   const m = clean.match(dmsRegex);
   if (m) {
@@ -436,14 +436,14 @@ function dibujarCoordInclinada(ctx, x, y, titulo, coordTexto, angleRad) {
   ctx.restore();
 }
 
-function sincronizarDestinoDesdePerimetro() {
+function sincronizarDestinoDesdePerimetro(forzar = false) {
   const cA = (document.getElementById("coordA")?.value || "").trim();
   const cB = (document.getElementById("coordB")?.value || "").trim();
   const cC = (document.getElementById("coordC")?.value || "").trim();
   const cD = (document.getElementById("coordD")?.value || "").trim();
   const coordValida = cA || cB || cC || cD;
   const destInput = document.getElementById("rutaDestino");
-  if (destInput && coordValida) {
+  if (destInput && coordValida && (forzar || !destInput.dataset.manualEdit)) {
     destInput.value = coordValida;
   }
 }
@@ -469,7 +469,7 @@ function dibujarPerimetro() {
   const coordC = formatearCoordenadaSegunModo(document.getElementById("coordC").value);
   const coordD = formatearCoordenadaSegunModo(document.getElementById("coordD").value);
 
-  sincronizarDestinoDesdePerimetro();
+  sincronizarDestinoDesdePerimetro(false);
 
   const faltanCoords = !coordA || !coordB || !coordC || !coordD;
 
@@ -571,11 +571,10 @@ function dibujarPerimetro() {
   dibujarCoordInclinada(ctx, rectX + rectW - diagOffsetX, rectY + rectH - diagOffsetY, "COORDENADA C:", coordC, -Math.PI / 4);
   dibujarCoordInclinada(ctx, rectX + diagOffsetX, rectY + rectH - diagOffsetY, "COORDENADA D:", coordD, Math.PI / 4);
 }
+
 /* =========================================================
    SINCRONIZACIÓN BIDIRECCIONAL ENTRE PESTAÑAS
    ========================================================= */
-const USER_TEMPLATE_KEY = "esquemas_tecnicos_plantilla_usuario_v1";
-
 const PREAJUSTE_RANGO_TORRE = {
   arbol: { topY: 0.14, bottomY: 0.86 },
   monopolo: { topY: 0.12, bottomY: 0.88 },
@@ -1015,6 +1014,7 @@ document.getElementById("btnRestaurarImgTorre")?.addEventListener("click", () =>
   if (inputFile) inputFile.value = "";
   dibujarTorreElevacion();
 });
+
 /* =========================================================
    PESTAÑA 4: ESQUEMA DE EQUIPOS EN TORRE (1 A 4 FOTOS)
    ========================================================= */
@@ -1534,6 +1534,7 @@ function construirGaleriaEquipos() {
     habilitarArrastreEnCanvas(foto);
   });
 }
+
 /* =========================================================
    LECTURA AUTOMÁTICA DE TIMESTAMP CAMERA (OCR)
    ========================================================= */
@@ -1609,6 +1610,8 @@ async function extraerMetadatosTimestampCamera(img) {
           const el = document.getElementById(cid);
           if (el) el.value = coordDetectada;
         });
+        const destInput = document.getElementById("rutaDestino");
+        if (destInput) delete destInput.dataset.manualEdit;
       }
       guardarEstadoLocal();
       dibujarTodo();
@@ -1729,7 +1732,7 @@ function parsearLineasInventario(textoMultilinea) {
     const clean = linea.trim();
     if (!clean) return;
 
-    const partes = clean.split(/[\t;|]+/).map((p) => p.trim()).filter(Boolean);
+    const partes = clean.split(/[\t;|,]+/).map((p) => p.trim()).filter(Boolean);
     if (partes.length >= 2) {
       let etiqueta = "";
       let altura = NaN;
@@ -1852,8 +1855,6 @@ function descargarTodasFotosUnidas() {
 /* =========================================================
    MOTOR DE APRENDIZAJE DE SITIOS Y PLANTILLAS DE FLECHAS
    ========================================================= */
-const KNOWLEDGE_DB_KEY = "esquemas_tecnicos_cerebro_sitios_v1";
-
 function cargarBaseConocimiento() {
   try {
     const raw = localStorage.getItem(KNOWLEDGE_DB_KEY);
@@ -1884,14 +1885,14 @@ function capturarFirmaSitioActual() {
   const alturaTorre = parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30;
   const agrupar = document.getElementById("equiposAgrupar")?.value || "si";
 
-  const fotoRef = fotosPanoramicas.at(0) || null;
+  const fotoRef = fotosPanoramicas[0] || null;
   const topY = fotoRef ? fotoRef.topY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.topY ?? 0.14);
   const bottomY = fotoRef ? fotoRef.bottomY : (PREAJUSTE_RANGO_TORRE[modeloTorre]?.bottomY ?? 0.86);
 
   const flechasAprendidas = fotoRef && Array.isArray(fotoRef.callouts)
     ? fotoRef.callouts.map((c, idx) => {
         const matchPref = c.texto.match(/^([A-ZÁÉÍÓÚÑ]+)/i);
-        const prefijo = (matchPref ? matchPref.at(1) : "EQ").toUpperCase();
+        const prefijo = (matchPref ? matchPref[1] : "EQ").toUpperCase();
         return {
           idx,
           texto: c.texto,
@@ -1925,7 +1926,6 @@ function capturarFirmaSitioActual() {
     flechasAprendidas
   };
 }
-
 
 function aprenderSitioActual(silencioso = false) {
   const firma = capturarFirmaSitioActual();
@@ -2069,6 +2069,7 @@ function actualizarUIPlantillasAprendidas() {
   });
   if (prevVal) sel.value = prevVal;
 }
+
 /* =========================================================
    PESTAÑA 5: DIAGRAMA RUTA AL SITIO (MAPA + CUADRO ROJO)
    ========================================================= */
@@ -2092,16 +2093,20 @@ async function resolverUbicacionRuta(texto) {
   if (coords) {
     return { ...coords, nombreCorto: texto };
   }
-  const url = `https://openstreetmap.org{encodeURIComponent(texto)}`;
-const resp = await fetch(url);
-const data = await resp.json();
-if (Array.isArray(data) && data.length > 0) {
-  return {
-    lat: parseFloat(data[0].lat),
-    lon: parseFloat(data[0].lon),
-    nombreCorto: texto.toUpperCase()
-  };
-}
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(texto)}`;
+  const resp = await fetch(url, {
+    headers: { Accept: "application/json" }
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  if (Array.isArray(data) && data.length > 0) {
+    return {
+      lat: parseFloat(data[0].lat),
+      lon: parseFloat(data[0].lon),
+      nombreCorto: texto.toUpperCase()
+    };
+  }
 
   return null;
 }
@@ -2113,7 +2118,7 @@ function inicializarMapaRuta() {
 
   mapaRuta = L.map("mapaRutaLeaflet", { preferCanvas: true }).setView([-12.06, -77.04], 12);
 
-  L.tileLayer("https://{s}://{z}/{x}/{y}{r}.png", {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap",
     crossOrigin: "anonymous",
     maxZoom: 19
@@ -2169,23 +2174,23 @@ async function calcularYTrazarRuta() {
       return;
     }
 
-    const routeUrl = `https://project-osrm.org{pOrigen.lon},${pOrigen.lat};${pDestino.lon},${pDestino.lat}?overview=full&geometries=geojson&steps=true`;
-    // ...
-     const ruta = rData.routes[0];
-     const coordsLatLng = ruta.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
-      const duracionMin = ruta.duration / 60;
-     const pasos = ruta.legs?.[0]?.steps || [];
-
+    const routeUrl = `https://router.project-osrm.org/route/v1/driving/${pOrigen.lon},${pOrigen.lat};${pDestino.lon},${pDestino.lat}?overview=full&geometries=geojson&steps=true`;
+    const rResp = await fetch(routeUrl);
+    if (!rResp.ok) {
+      setAviso("avisoRuta", "No se pudo consultar el servicio de rutas.", "error");
+      return;
+    }
+    const rData = await rResp.json();
 
     if (!rData.routes || !rData.routes.length) {
       setAviso("avisoRuta", "No se encontró una ruta vehicular entre ambos puntos.", "error");
       return;
     }
 
-    const ruta = rData.routes;
+    const ruta = rData.routes[0];
     const coordsLatLng = ruta.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
     const duracionMin = ruta.duration / 60;
-    const pasos = ruta.legs?.steps || [];
+    const pasos = ruta.legs?.[0]?.steps || [];
 
     if (capaRutaLinea) mapaRuta.removeLayer(capaRutaLinea);
     if (marcadorCustodio) mapaRuta.removeLayer(marcadorCustodio);
@@ -2215,9 +2220,9 @@ async function calcularYTrazarRuta() {
 
     const bounds = capaRutaLinea.getBounds();
     mapaRuta.fitBounds(bounds, {
-      paddingTopLeft:,
-     paddingBottomRight: [260, 30]
-     });
+      paddingTopLeft: [30, 30],
+      paddingBottomRight: [260, 30]
+    });
 
     const textoRuta = construirTextoNarrativoRuta(origenRaw, pDestino.nombreCorto, pasos, duracionMin);
     const txtArea = document.getElementById("rutaDetalleTexto");
@@ -2247,7 +2252,7 @@ async function capturarMapaParaCanvasRuta() {
   try {
     const captured = await html2canvas(mapEl, {
       useCORS: true,
-      allowTaint: false,
+      allowTaint: true,
       logging: false,
       scale: 1.5
     });
@@ -2348,6 +2353,7 @@ function dibujarCanvasRutaFinal() {
 
   ctx.restore();
 }
+
 /* =========================================================
    ARRASTRE DEL CUADRO ROJO EN PESTAÑA 5 (RUTA)
    ========================================================= */
@@ -2494,6 +2500,14 @@ function restaurarEstadoLocal() {
   } catch (_) {}
 }
 
+document.getElementById("rutaDestino")?.addEventListener("input", (e) => {
+  if (e.currentTarget.value.trim()) {
+    e.currentTarget.dataset.manualEdit = "1";
+  } else {
+    delete e.currentTarget.dataset.manualEdit;
+  }
+});
+
 allInputs.forEach((id) => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -2512,7 +2526,6 @@ allInputs.forEach((id) => {
       sincronizarAlturaGlobal(el.value, id);
       dibujarTorreElevacion();
     } else if (id === "equiposFontSize") {
-      // Cambia solo el tamaño de fuente sin destruir flechas arrastradas manualmente
       renderizarTodasLasFotosEquipos();
     } else if (id === "equiposAgrupar") {
       recalcularYRenderizarTodasFotos();
@@ -2527,7 +2540,21 @@ allInputs.forEach((id) => {
   el.addEventListener("change", onChangeHandler);
 });
 
-// Botón convertir coordenadas de Perímetro a GMS limpio
+document.addEventListener("keydown", (e) => {
+  if (e.key === "F10") {
+    e.preventDefault();
+    document.getElementById("btnDescargarTodoLote")?.click();
+  } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    const activePanel = document.querySelector(".tab-panel.active");
+    if (!activePanel) return;
+    if (activePanel.id === "tabSpat") document.getElementById("btnDescargarSpat")?.click();
+    else if (activePanel.id === "tabPerimetro") document.getElementById("btnDescargarPer")?.click();
+    else if (activePanel.id === "tabTorre") document.getElementById("btnDescargarTorre")?.click();
+    else if (activePanel.id === "tabEquipos") document.getElementById("btnDescargarUnidaEquipos")?.click();
+    else if (activePanel.id === "tabRuta") document.getElementById("btnDescargarRuta")?.click();
+  }
+});
+
 document.getElementById("btnConvertirCoordsGMS")?.addEventListener("click", () => {
   const selFormato = document.getElementById("perFormatoCoord");
   if (selFormato) selFormato.value = "gms";
@@ -2537,11 +2564,12 @@ document.getElementById("btnConvertirCoordsGMS")?.addEventListener("click", () =
       inp.value = formatearCoordenadaSegunModo(inp.value);
     }
   });
+  const destInput = document.getElementById("rutaDestino");
+  if (destInput) delete destInput.dataset.manualEdit;
   guardarEstadoLocal();
   dibujarPerimetro();
 });
 
-// Eventos Pestaña 4: Subida de Fotos Panorámicas
 document.getElementById("equiposFotos")?.addEventListener("change", (e) => {
   const files = Array.from(e.target.files || []);
   if (!files.length) return;
@@ -2594,16 +2622,44 @@ document.getElementById("equiposFotos")?.addEventListener("change", (e) => {
   e.target.value = "";
 });
 
-// Eventos Pestaña 4: Importar Excel / CSV
 document.getElementById("inputExcelEquipos")?.addEventListener("change", (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+
+  const lower = file.name.toLowerCase();
+  const isImage = /\.(jpg|jpeg|png|webp|bmp)$/i.test(lower);
+
+  if (isImage && typeof window.Tesseract !== "undefined") {
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        setAviso("avisoEquipos", "Extrayendo listado de equipos desde la imagen...", "warning");
+        const res = await window.Tesseract.recognize(ev.target.result, "spa+eng");
+        const importados = parsearLineasInventario(res?.data?.text || "");
+        if (importados.length > 0) {
+          importados.sort((a, b) => b.altura - a.altura);
+          listaEquipos = importados;
+          guardarEstadoLocal();
+          renderizarTablaEquipos();
+          recalcularYRenderizarTodasFotos();
+          setAviso("avisoEquipos", `Se importaron ${importados.length} equipos desde la imagen.`, "warning");
+        } else {
+          setAviso("avisoEquipos", "No se detectaron filas válidas de equipos en la imagen.", "warning");
+        }
+      } catch (_) {
+        setAviso("avisoEquipos", "Error al procesar la imagen con OCR.", "error");
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = (ev) => {
     try {
       let textoTabla = "";
-      if (file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt")) {
+      if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
         textoTabla = ev.target.result;
       } else if (typeof window.XLSX !== "undefined") {
         const workbook = window.XLSX.read(ev.target.result, { type: "array" });
@@ -2617,13 +2673,16 @@ document.getElementById("inputExcelEquipos")?.addEventListener("change", (e) => 
         guardarEstadoLocal();
         renderizarTablaEquipos();
         recalcularYRenderizarTodasFotos();
+        setAviso("avisoEquipos", "");
+      } else {
+        setAviso("avisoEquipos", "No se encontraron filas válidas (código y altura) en el archivo.", "warning");
       }
     } catch (_) {
       setAviso("avisoEquipos", "Error al leer el archivo Excel o CSV.", "error");
     }
   };
 
-  if (file.name.toLowerCase().endsWith(".csv") || file.name.toLowerCase().endsWith(".txt")) {
+  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
     reader.readAsText(file);
   } else {
     reader.readAsArrayBuffer(file);
@@ -2631,7 +2690,6 @@ document.getElementById("inputExcelEquipos")?.addEventListener("change", (e) => 
   e.target.value = "";
 });
 
-// Botones de control de equipos
 document.getElementById("btnAgregarEquipo")?.addEventListener("click", () => {
   const maxH = listaEquipos.length ? Math.max(...listaEquipos.map((e) => parseFloat(e.altura) || 0)) : 28.0;
   listaEquipos.push({
@@ -2707,6 +2765,126 @@ document.getElementById("btnRestarDeltaAltura")?.addEventListener("click", () =>
   renderizarTablaEquipos();
   recalcularYRenderizarTodasFotos();
 });
+document.getElementById("btnEscalarProporcional")?.addEventListener("click", () => {
+  if (!listaEquipos.length) return;
+  const alturaRef = Math.max(1, parseFloat(document.getElementById("equiposAlturaRef")?.value) || 30);
+  const maxActual = Math.max(...listaEquipos.map((e) => parseFloat(e.altura) || 0));
+  if (maxActual <= 0) return;
+  const ratio = alturaRef / maxActual;
+  listaEquipos.forEach((eq) => {
+    eq.altura = Number(Math.max(0.5, (parseFloat(eq.altura) || 0) * ratio).toFixed(2));
+  });
+  guardarEstadoLocal();
+  renderizarTablaEquipos();
+  recalcularYRenderizarTodasFotos();
+});
+
+document.getElementById("btnGuardarPlantillaUsuario")?.addEventListener("click", () => {
+  try {
+    localStorage.setItem(USER_TEMPLATE_KEY, JSON.stringify(listaEquipos));
+    setAviso("avisoEquipos", "Tu lista actual se guardó como plantilla personal.", "warning");
+  } catch (_) {}
+});
+document.getElementById("btnCargarPlantillaUsuario")?.addEventListener("click", () => {
+  try {
+    const raw = localStorage.getItem(USER_TEMPLATE_KEY);
+    if (!raw) {
+      setAviso("avisoEquipos", "No tienes ninguna plantilla personal guardada.", "warning");
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      listaEquipos = parsed.map((item, idx) => ({ ...item, id: Date.now() + idx + Math.random() }));
+      guardarEstadoLocal();
+      renderizarTablaEquipos();
+      recalcularYRenderizarTodasFotos();
+      setAviso("avisoEquipos", "Plantilla personal cargada.", "warning");
+    }
+  } catch (_) {}
+});
+
+document.getElementById("btnGuardarPlantillaFlechas")?.addEventListener("click", () => {
+  const inp = document.getElementById("inpNombrePlantillaFlechas");
+  const nombre = (inp?.value || "").trim() || `${getSitio()} (${document.getElementById("torreTipo")?.value || "torre"})`;
+  const firma = capturarFirmaSitioActual();
+  const db = cargarBaseConocimiento();
+  const nuevaTpl = {
+    id: `tpl_${Date.now()}`,
+    nombre,
+    ...firma
+  };
+  db.plantillasFlechas.push(nuevaTpl);
+  guardarBaseConocimiento(db);
+  if (inp) inp.value = "";
+  const sel = document.getElementById("selPlantillasGuardadas");
+  if (sel) sel.value = nuevaTpl.id;
+  setAviso("avisoEquipos", `Plantilla "${nombre}" guardada con ${firma.flechasAprendidas.length} flechas.`, "warning");
+});
+
+document.getElementById("btnAplicarPlantillaGuardada")?.addEventListener("click", () => {
+  const sel = document.getElementById("selPlantillasGuardadas");
+  if (!sel || !sel.value) {
+    setAviso("avisoEquipos", "Selecciona una plantilla guardada primero.", "warning");
+    return;
+  }
+  const db = cargarBaseConocimiento();
+  const tpl = db.plantillasFlechas.find((t) => String(t.id) === String(sel.value));
+  if (!tpl) return;
+  aplicarGeometriaAprendidaAFotos(tpl, false);
+  setAviso("avisoEquipos", `Plantilla "${tpl.nombre}" aplicada.`, "warning");
+});
+
+document.getElementById("btnEliminarPlantillaGuardada")?.addEventListener("click", () => {
+  const sel = document.getElementById("selPlantillasGuardadas");
+  if (!sel || !sel.value) return;
+  const db = cargarBaseConocimiento();
+  db.plantillasFlechas = db.plantillasFlechas.filter((t) => String(t.id) !== String(sel.value));
+  guardarBaseConocimiento(db);
+  setAviso("avisoEquipos", "Plantilla eliminada.", "warning");
+});
+
+document.getElementById("btnExportarCerebro")?.addEventListener("click", () => {
+  const db = cargarBaseConocimiento();
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `aprendizaje_esquemas_${getSitioSlug()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("inputImportarCerebro")?.addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const incoming = JSON.parse(ev.target.result);
+      const current = cargarBaseConocimiento();
+      const mergedSitios = [...current.sitiosAprendidos];
+      if (Array.isArray(incoming.sitiosAprendidos)) {
+        incoming.sitiosAprendidos.forEach((s) => {
+          const idx = mergedSitios.findIndex((x) => x.sitio === s.sitio);
+          if (idx >= 0) mergedSitios[idx] = s;
+          else mergedSitios.push(s);
+        });
+      }
+      const mergedTpls = [...current.plantillasFlechas];
+      if (Array.isArray(incoming.plantillasFlechas)) {
+        incoming.plantillasFlechas.forEach((t) => {
+          if (!mergedTpls.some((x) => String(x.id) === String(t.id))) mergedTpls.push(t);
+        });
+      }
+      guardarBaseConocimiento({ sitiosAprendidos: mergedSitios, plantillasFlechas: mergedTpls });
+      setAviso("avisoEquipos", "Base de aprendizaje importada y combinada correctamente.", "warning");
+    } catch (_) {
+      setAviso("avisoEquipos", "El archivo JSON seleccionado no es válido.", "error");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
 
 document.getElementById("btnDescargarUnidaEquipos")?.addEventListener("click", descargarTodasFotosUnidas);
 document.getElementById("btnAutoDistribuirEquipos")?.addEventListener("click", recalcularYRenderizarTodasFotos);
@@ -2723,12 +2901,10 @@ document.getElementById("btnToggleLockDrag")?.addEventListener("click", (e) => {
   fotosPanoramicas.forEach((f) => f.canvas?.classList.toggle("scroll-unlocked", bloqueoArrastre));
 });
 
-// Botones de Aprendizaje
 document.getElementById("btnAprenderSitioActual")?.addEventListener("click", () => aprenderSitioActual(false));
 document.getElementById("btnAplicarAprendizajeAuto")?.addEventListener("click", ejecutarAutoLlenadoDesdeAprendizaje);
 document.getElementById("btnAutoAcomodarRapido")?.addEventListener("click", ejecutarAutoLlenadoDesdeAprendizaje);
 
-// Botones de Descarga Individuales
 document.getElementById("btnActualizarSpat")?.addEventListener("click", dibujarSpat);
 document.getElementById("btnDescargarSpat")?.addEventListener("click", () => {
   dibujarSpat();
@@ -2748,20 +2924,18 @@ document.getElementById("btnDescargarTorre")?.addEventListener("click", () => {
   descargarCanvas("canvasTorre", `3_ESQUEMA_TORRE_${modelo}`);
 });
 
-// Botones Pestaña 5: Ruta al Sitio
 document.getElementById("btnCalcularRuta")?.addEventListener("click", calcularYTrazarRuta);
 document.getElementById("btnRedibujarRuta")?.addEventListener("click", capturarMapaParaCanvasRuta);
 document.getElementById("btnAbrirGoogleMaps")?.addEventListener("click", () => {
   const orig = encodeURIComponent(document.getElementById("rutaOrigen")?.value || "");
   const dest = encodeURIComponent(document.getElementById("rutaDestino")?.value || "");
-  window.open(`https://google.com{orig}&destination=${dest}&travelmode=driving`, "_blank");
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`, "_blank", "noopener,noreferrer");
 });
 document.getElementById("btnDescargarRuta")?.addEventListener("click", () => {
   dibujarCanvasRutaFinal();
   descargarCanvas("canvasRutaFinal", "5_DIAGRAMA_RUTA_SITIO");
 });
 
-// Descargar Todo (F10) incluyendo las 5 pestañas
 document.getElementById("btnDescargarTodoLote")?.addEventListener("click", () => {
   dibujarTodo();
   const modelo = (document.getElementById("torreTipo")?.value || "TORRE").toUpperCase();
@@ -2791,7 +2965,10 @@ document.getElementById("btnNuevoSitioConBase")?.addEventListener("click", () =>
   }
   ["coordA", "coordB", "coordC", "coordD", "rutaOrigen", "rutaDestino", "rutaDetalleTexto"].forEach((cid) => {
     const el = document.getElementById(cid);
-    if (el) el.value = "";
+    if (el) {
+      el.value = "";
+      delete el.dataset.manualEdit;
+    }
   });
   imagenMapaBase = null;
   guardarEstadoLocal();
@@ -2811,3 +2988,26 @@ actualizarCamposTorre();
 actualizarUIPlantillasAprendidas();
 renderizarTablaEquipos();
 dibujarTodo();
+
+// Inyección automática de botones externos en la barra superior
+(function agregarBotonesExternos() {
+  const btnReset = document.getElementById("btnResetTodo");
+  if (!btnReset || !btnReset.parentElement) return;
+
+  const enlaces = [
+    { texto: "🌐 Panorámico 360°", url: "https://github.io" },
+    { texto: "⚡ Diagrama Tablero", url: "https://github.io" }
+  ];
+
+  enlaces.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-action btn-primary";
+    btn.textContent = item.texto;
+    btn.addEventListener("click", () => {
+      window.open(item.url, "_blank", "noopener,noreferrer");
+    });
+    btnReset.parentElement.appendChild(btn);
+  });
+})();
+
