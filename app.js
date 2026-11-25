@@ -1,4 +1,4 @@
-﻿ const FONT_SIZE_RELLENO = 16;
+const FONT_SIZE_RELLENO = 16;
 const STORAGE_KEY = "esquemas_tecnicos_estado_v4";
 const USER_TEMPLATE_KEY = "esquemas_tecnicos_plantilla_usuario_v1";
 const KNOWLEDGE_DB_KEY = "esquemas_tecnicos_cerebro_sitios_v1";
@@ -666,7 +666,7 @@ const MODELOS_TORRE = {
   arbol: {
     nombre: "Torre público tipo árbol",
     src: "img/1_torre_arbol.png",
-    sitioPos: { xRatio: 0.94, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.74, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.052, yRatio: 0.485, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.892, yRatio: 0.928, size: 22 }
@@ -675,7 +675,7 @@ const MODELOS_TORRE = {
   monopolo: {
     nombre: "Torre monopolo (3 roldanas)",
     src: "img/2_torre_monopolo.png",
-    sitioPos: { xRatio: 0.08, yRatio: 0.15 },
+    sitioPos: { xRatio: 0.14, yRatio: 0.15 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.062, yRatio: 0.450, size: 23 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.785, yRatio: 0.956, size: 21 },
@@ -690,7 +690,7 @@ const MODELOS_TORRE = {
   autosoportada_normal: {
     nombre: "Torre autosoportada (roldana normal)",
     src: "img/3_torre_autosoportada_normal.png",
-    sitioPos: { xRatio: 0.10, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.15, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.042, yRatio: 0.618, size: 22 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.654, yRatio: 0.658, size: 18 },
@@ -731,7 +731,7 @@ const MODELOS_TORRE = {
   autosoportada_encima: {
     nombre: "Torre autosoportada (roldana encima)",
     src: "img/7_torre_autosoportada_encima.png",
-    sitioPos: { xRatio: 0.08, yRatio: 0.13 },
+    sitioPos: { xRatio: 0.16, yRatio: 0.13 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.044, yRatio: 0.588, size: 18 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.662, yRatio: 0.602, size: 18 },
@@ -752,7 +752,7 @@ const MODELOS_TORRE = {
   autosoportada_sin_roldana: {
     nombre: "Torre autosoportada sin roldana",
     src: "img/9_torre_autosoportada_sin_roldana.png",
-    sitioPos: { xRatio: 0.09, yRatio: 0.12 },
+    sitioPos: { xRatio: 0.16, yRatio: 0.12 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.610, yRatio: 0.530, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.445, yRatio: 0.965, size: 20 }
@@ -761,7 +761,7 @@ const MODELOS_TORRE = {
   estructura_especial: {
     nombre: "Torre estructura especial",
     src: "img/10_torre_estructura_especial.png",
-    sitioPos: { xRatio: 0.09, yRatio: 0.14 },
+    sitioPos: { xRatio: 0.25, yRatio: 0.09 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`,    xRatio: 0.770, yRatio: 0.215, size: 22 },
       { texto: `${v.alturaBase} m`,     xRatio: 0.590, yRatio: 0.382, size: 19 },
@@ -772,7 +772,7 @@ const MODELOS_TORRE = {
   autosoportada_rooftop: {
     nombre: "Torre autosoportada rooftop",
     src: "img/11_torre_autosoportada_rooftop.png",
-    sitioPos: { xRatio: 0.08, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.26, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`,    xRatio: 0.555, yRatio: 0.215, size: 22 },
       { texto: `${v.alturaBase} m`,     xRatio: 0.065, yRatio: 0.390, size: 19 },
@@ -783,7 +783,7 @@ const MODELOS_TORRE = {
   monopolo_1_roldana: {
     nombre: "Torre monopolo 1 roldana",
     src: "img/12_torre_monopolo_1_roldana.png",
-    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.25, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.635, yRatio: 0.090, size: 17 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.635, yRatio: 0.145, size: 17 },
@@ -794,7 +794,7 @@ const MODELOS_TORRE = {
   monopolo_2_roldanas: {
     nombre: "Torre monopolo 2 roldanas",
     src: "img/13_torre_monopolo_2_roldanas.png",
-    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.25, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.rol1Sup} m`,     xRatio: 0.635, yRatio: 0.090, size: 16 },
       { texto: `${v.rol1Inf} m`,     xRatio: 0.635, yRatio: 0.145, size: 16 },
@@ -807,7 +807,7 @@ const MODELOS_TORRE = {
   monoposte: {
     nombre: "Torre monoposte",
     src: "img/14_torre_monoposte.png",
-    sitioPos: { xRatio: 0.05, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.22, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.060, yRatio: 0.415, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.680, yRatio: 0.940, size: 21 }
@@ -2988,26 +2988,3 @@ actualizarCamposTorre();
 actualizarUIPlantillasAprendidas();
 renderizarTablaEquipos();
 dibujarTodo();
-
-// Inyección automática de botones externos en la barra superior
-(function agregarBotonesExternos() {
-  const btnReset = document.getElementById("btnResetTodo");
-  if (!btnReset || !btnReset.parentElement) return;
-
-  const enlaces = [
-    { texto: "🌐 Panorámico 360°", url: "https://anthonyalvaroc-svg.github.io/PANORAMICO360/" },
-    { texto: "⚡ Diagrama Tablero", url: "https://anthonyalvaroc-svg.github.io/DIAGRAMA-TABLERO-V2/" }
-  ];
-
-  enlaces.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn-action btn-primary";
-    btn.textContent = item.texto;
-    btn.addEventListener("click", () => {
-      window.open(item.url, "_blank", "noopener,noreferrer");
-    });
-    btnReset.parentElement.appendChild(btn);
-  });
-})();
-
