@@ -761,7 +761,7 @@ const MODELOS_TORRE = {
   estructura_especial: {
     nombre: "Torre estructura especial",
     src: "img/10_torre_estructura_especial.png",
-    sitioPos: { xRatio: 0.25, yRatio: 0.09 },
+    sitioPos: { xRatio: 0.09, yRatio: 0.14 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`,    xRatio: 0.770, yRatio: 0.215, size: 22 },
       { texto: `${v.alturaBase} m`,     xRatio: 0.590, yRatio: 0.382, size: 19 },
@@ -783,7 +783,7 @@ const MODELOS_TORRE = {
   monopolo_1_roldana: {
     nombre: "Torre monopolo 1 roldana",
     src: "img/12_torre_monopolo_1_roldana.png",
-    sitioPos: { xRatio: 0.10, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.roldanaSup} m`,  xRatio: 0.635, yRatio: 0.090, size: 17 },
       { texto: `${v.roldanaInf} m`,  xRatio: 0.635, yRatio: 0.145, size: 17 },
@@ -794,7 +794,7 @@ const MODELOS_TORRE = {
   monopolo_2_roldanas: {
     nombre: "Torre monopolo 2 roldanas",
     src: "img/13_torre_monopolo_2_roldanas.png",
-    sitioPos: { xRatio: 0.08, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.03, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.rol1Sup} m`,     xRatio: 0.635, yRatio: 0.090, size: 16 },
       { texto: `${v.rol1Inf} m`,     xRatio: 0.635, yRatio: 0.145, size: 16 },
@@ -807,7 +807,7 @@ const MODELOS_TORRE = {
   monoposte: {
     nombre: "Torre monoposte",
     src: "img/14_torre_monoposte.png",
-    sitioPos: { xRatio: 0.08, yRatio: 0.08 },
+    sitioPos: { xRatio: 0.05, yRatio: 0.08 },
     cotas: (v) => [
       { texto: `${v.alturaTotal} m`, xRatio: 0.060, yRatio: 0.415, size: 22 },
       { texto: `${v.alturaBase} m`,  xRatio: 0.680, yRatio: 0.940, size: 21 }
